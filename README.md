@@ -1,1 +1,1 @@
-# validator-gen
+# go-mock-gen
