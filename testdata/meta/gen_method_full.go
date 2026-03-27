@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -17,6 +18,24 @@ type targetFull struct {
 	stubLocation   string
 	verifyDisabled bool
 	expects        []*targetFullExpect
+}
+
+func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
+	if len(m.Calls) > 0 {
+		sb.WriteString("call history:\n")
+		m.buildCallHistory(sb)
+	}
+}
+
+func (m *targetFull) buildCallHistory(sb *strings.Builder) {
+	for i, call := range m.Calls {
+		sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", i+1, m.expects[i].location))
+		sb.WriteString(fmt.Sprintf("\t   called at: %s\n", call.location))
+		sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
+		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", call.Arguments.ctx))     // 5 is max of len(ctx), len(input)
+		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", call.Arguments.input)) // 5 is max of len(ctx), len(input)
+		sb.WriteString("\n")
+	}
 }
 
 func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, error) {
@@ -42,15 +61,8 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	if index >= len(m.expects) {
 		sb := strings.Builder{}
 		sb.WriteString("too many calls to Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\texpected: %d, got: %d\n\n", len(m.expects), index+1))
-		for i, call := range m.Calls {
-			sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", i+1, m.expects[i].location))
-			sb.WriteString(fmt.Sprintf("\t   called at: %s\n", call.location))
-			sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
-			sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", call.Arguments.ctx))     // 5 is max of len(ctx), len(input)
-			sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", call.Arguments.input)) // 5 is max of len(ctx), len(input)
-			sb.WriteString("\n")
-		}
+		sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", len(m.expects), index+1))
+		m.buildCallHistory(&sb)
 		sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", index+1, "missing"))
 		sb.WriteString(fmt.Sprintf("\t   called at: %s\n", location))
 		sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
@@ -70,30 +82,43 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 			sb.WriteString(fmt.Sprintf("arguments:\n"))
 			sb.WriteString(fmt.Sprintf("\t%5s = %#v\n", "ctx", ctx))     // 5 is max of len(ctx), len(input)
 			sb.WriteString(fmt.Sprintf("\t%5s = %#v\n", "input", input)) // 5 is max of len(ctx), len(input)
-
-			if len(m.Calls) > 0 {
-				sb.WriteString("\ncall history:\n")
-			}
-
-			// duplicated - reduce later
-
-			for i, call := range m.Calls {
-				sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", i+1, m.expects[i].location))
-				sb.WriteString(fmt.Sprintf("\t   called at: %s\n", call.location))
-				sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
-				sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", call.Arguments.ctx))     // 5 is max of len(ctx), len(input)
-				sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", call.Arguments.input)) // 5 is max of len(ctx), len(input)
-				sb.WriteString("\n")
-			}
-
+			sb.WriteString("\n")
+			m.buildCallHistoryWithHeader(&sb)
 			sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", expect.location))
 			m.verifyDisabled = true
 			expect.tb.Fatal(sb.String())
 		}
 	}
-	//if m.expects[index].arguments != nil {
-	//	// TODO: compare arguments
-	//}
+
+	if expect.arguments != nil {
+		if !reflect.DeepEqual(expect.arguments.ctx, ctx) {
+			expect.tb.Helper()
+			sb := strings.Builder{}
+			sb.WriteString(fmt.Sprintf("Target.Full call #%d argument \"ctx\" did not match\n", index+1))
+			sb.WriteString(fmt.Sprintf("  want: %#v\n", expect.arguments.ctx))
+			sb.WriteString(fmt.Sprintf("   got: %#v\n", ctx))
+			sb.WriteString(fmt.Sprintf("method: reflect.DeepEqual\n"))
+			sb.WriteString("\n")
+			m.buildCallHistoryWithHeader(&sb)
+			sb.WriteString(fmt.Sprintf("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control", expect.location))
+			m.verifyDisabled = true
+			expect.tb.Fatal(sb.String())
+		}
+
+		if expect.arguments.input != input {
+			expect.tb.Helper()
+			sb := strings.Builder{}
+			sb.WriteString(fmt.Sprintf("Target.Full call #%d argument \"input\" did not match\n", index+1))
+			sb.WriteString(fmt.Sprintf("  want: %#v\n", expect.arguments.input))
+			sb.WriteString(fmt.Sprintf("   got: %#v\n", input))
+			sb.WriteString(fmt.Sprintf("method: ==\n"))
+			sb.WriteString("\n")
+			m.buildCallHistoryWithHeader(&sb)
+			sb.WriteString(fmt.Sprintf("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control", expect.location))
+			m.verifyDisabled = true
+			expect.tb.Fatal(sb.String())
+		}
+	}
 
 	m.Calls = append(m.Calls, targetFullCall{
 		location: location,
@@ -265,15 +290,8 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 			tb.Helper()
 			sb := strings.Builder{}
 			sb.WriteString("Target.Full was not called as expected\n")
-			sb.WriteString(fmt.Sprintf("\texpected: %d, got: %d\n\n", len(expects), len(calls)))
-			for i, call := range calls {
-				sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", i+1, expects[i].location))
-				sb.WriteString(fmt.Sprintf("\t   called at: %s\n", call.location))
-				sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
-				sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", call.Arguments.ctx))     // 5 is max of len(ctx), len(input)
-				sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", call.Arguments.input)) // 5 is max of len(ctx), len(input)
-				sb.WriteString("\n")
-			}
+			sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", len(expects), len(calls)))
+			e.target.td.Full.buildCallHistory(&sb)
 			sb.WriteString(fmt.Sprintf("\t#%d never called\n\n", index+1))
 			sb.WriteString("\thint: add the missing call or remove the EXPECT above")
 			tb.Fatal(sb.String())

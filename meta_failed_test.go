@@ -23,6 +23,9 @@ func extractOutput(in []byte) string {
 		if strings.HasPrefix(line, "FAIL") {
 			continue
 		}
+		if line == "" {
+			continue
+		}
 		trimmed.WriteString(line)
 		trimmed.WriteString("\n")
 	}
@@ -190,7 +193,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 			name:    "Test_One_EXPECT_Call_Twice",
 			isPanic: true,
 			expected: `too many calls to Target.Full
-		expected: 1, got: 2
+		want: 1, got: 2
 	
 		#1 expect at: failed_called_more_than_expected_test.go:11
 		   called at: failed_called_more_than_expected_test.go:13
@@ -212,7 +215,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 			name:    "Test_Two_EXPECT_Call_Thrice",
 			isPanic: true,
 			expected: `too many calls to Target.Full
-		expected: 2, got: 3
+		want: 2, got: 3
 	
 		#1 expect at: failed_called_more_than_expected_test.go:20
 		   called at: failed_called_more_than_expected_test.go:23
@@ -240,7 +243,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 			name:    "Test_One_EXPECT_Call_Twice_In_Production",
 			isPanic: true,
 			expected: `too many calls to Target.Full
-		expected: 1, got: 2
+		want: 1, got: 2
 	
 		#1 expect at: failed_called_more_than_expected_test.go:32
 		   called at: production_code.go:18
@@ -262,7 +265,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 			name:    "Test_Two_EXPECT_Call_Thrice_In_Production",
 			isPanic: true,
 			expected: `too many calls to Target.Full
-		expected: 2, got: 3
+		want: 2, got: 3
 	
 		#1 expect at: failed_called_more_than_expected_test.go:41
 		   called at: production_code.go:28
@@ -300,7 +303,7 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
 		{
 			name: "Test_Two_EXPECT_Call_Once",
 			expected: `    failed_call_less_than_expected_test.go:12: Target.Full was not called as expected
-        	expected: 2, got: 1
+        	want: 2, got: 1
         
         	#1 expect at: failed_call_less_than_expected_test.go:11
         	   called at: failed_call_less_than_expected_test.go:14
@@ -311,14 +314,13 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
         	#2 never called
         
         	hint: add the missing call or remove the EXPECT above
-
 `,
 		},
 
 		{
 			name: "Test_Three_EXPECT_Call_Twice",
 			expected: `    failed_call_less_than_expected_test.go:22: Target.Full was not called as expected
-        	expected: 3, got: 2
+        	want: 3, got: 2
         
         	#1 expect at: failed_call_less_than_expected_test.go:20
         	   called at: failed_call_less_than_expected_test.go:24
@@ -335,14 +337,13 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
         	#3 never called
         
         	hint: add the missing call or remove the EXPECT above
-
 `,
 		},
 
 		{
 			name: "Test_Two_EXPECT_Call_Once_In_Production",
 			expected: `    failed_call_less_than_expected_test.go:33: Target.Full was not called as expected
-        	expected: 2, got: 1
+        	want: 2, got: 1
         
         	#1 expect at: failed_call_less_than_expected_test.go:32
         	   called at: production_code.go:14
@@ -353,14 +354,13 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
         	#2 never called
         
         	hint: add the missing call or remove the EXPECT above
-
 `,
 		},
 
 		{
 			name: "Test_Three_EXPECT_Call_Twice_In_Production",
 			expected: `    failed_call_less_than_expected_test.go:44: Target.Full was not called as expected
-        	expected: 3, got: 2
+        	want: 3, got: 2
         
         	#1 expect at: failed_call_less_than_expected_test.go:42
         	   called at: production_code.go:18
@@ -377,7 +377,6 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
         	#3 never called
         
         	hint: add the missing call or remove the EXPECT above
-
 `,
 		},
 
@@ -398,8 +397,8 @@ func Test_MockFailureOutput_Match(t *testing.T) {
         arguments:
         	  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         	input = "a"
+        
         hint: check the callback passed to Match at failed_match_test.go:11
-
 `,
 		},
 
@@ -418,7 +417,6 @@ func Test_MockFailureOutput_Match(t *testing.T) {
         		input = "1"
         
         hint: check the callback passed to Match at failed_match_test.go:24
-
 `,
 		},
 
@@ -428,8 +426,8 @@ func Test_MockFailureOutput_Match(t *testing.T) {
         arguments:
         	  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         	input = "a"
+        
         hint: check the callback passed to Match at failed_match_test.go:36
-
 `,
 		},
 
@@ -448,7 +446,140 @@ func Test_MockFailureOutput_Match(t *testing.T) {
         		input = "a 1"
         
         hint: check the callback passed to Match at failed_match_test.go:50
+`,
+		},
+		// ---
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.Run(t)
+		})
+	}
+}
 
+func Test_MockFailureOutput_CalledWith(t *testing.T) {
+	cases := []failureOutputTestCase{
+		{
+			name: "Test_CallWith_Fail_FirstCall_FirstArgument",
+			expected: `    failed_called_with_test.go:14: Target.Full call #1 argument "ctx" did not match
+          want: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+           got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
+        method: reflect.DeepEqual
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:12
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_FirstCall_SecondArgument",
+			expected: `    failed_called_with_test.go:23: Target.Full call #1 argument "input" did not match
+          want: "a"
+           got: "1"
+        method: ==
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:21
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_SecondCall_FirstArgument",
+			expected: `    failed_called_with_test.go:34: Target.Full call #2 argument "ctx" did not match
+          want: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+           got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
+        method: reflect.DeepEqual
+        
+        call history:
+        	#1 expect at: failed_called_with_test.go:30
+        	   called at: failed_called_with_test.go:33
+        	   arguments:
+        		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        		input = "1"
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:31
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_SecondCall_SecondArgument",
+			expected: `    failed_called_with_test.go:45: Target.Full call #2 argument "input" did not match
+          want: "1"
+           got: "a"
+        method: ==
+        
+        call history:
+        	#1 expect at: failed_called_with_test.go:41
+        	   called at: failed_called_with_test.go:44
+        	   arguments:
+        		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        		input = "1"
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:42
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_FirstCall_FirstArgument_Production",
+			expected: `    production_code.go:14: Target.Full call #1 argument "ctx" did not match
+          want: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+           got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
+        method: reflect.DeepEqual
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:53
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_FirstCall_SecondArgument_Production",
+			expected: `    production_code.go:14: Target.Full call #1 argument "input" did not match
+          want: "a"
+           got: "1"
+        method: ==
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:63
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_SecondCall_FirstArgument_Production",
+			expected: `    production_code.go:14: Target.Full call #2 argument "ctx" did not match
+          want: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+           got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
+        method: reflect.DeepEqual
+        
+        call history:
+        	#1 expect at: failed_called_with_test.go:73
+        	   called at: failed_called_with_test.go:76
+        	   arguments:
+        		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        		input = "1"
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:74
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_CallWith_Fail_SecondCall_SecondArgument_Production",
+			expected: `    production_code.go:14: Target.Full call #2 argument "input" did not match
+          want: "1"
+           got: "a"
+        method: ==
+        
+        call history:
+        	#1 expect at: failed_called_with_test.go:85
+        	   called at: failed_called_with_test.go:88
+        	   arguments:
+        		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        		input = "1"
+        
+        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:86
+        	or use STUB for fine-grained control
 `,
 		},
 		// ---
