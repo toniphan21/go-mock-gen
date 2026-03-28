@@ -1,0 +1,34 @@
+name: Go Test Suite
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Pkl
+        uses: pkl-community/setup-pkl@v0
+        with:
+          pkl-version: '0.29.1'
+
+      - name: Verify Pkl
+        run: pkl --version
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run Tests
+        run: go test -v ./...

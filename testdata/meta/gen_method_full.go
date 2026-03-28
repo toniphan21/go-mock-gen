@@ -53,12 +53,8 @@ func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 		createdAtLocation = m.td.location
 	}
 	msg := targetMessageNotImplemented(
-		"Target.Full",
-		"Target.Full(ctx Context, id string) ([]Result, error)",
-		targetCallerLocation(2),
-		createdAtLocation,
-		"ctx", ctx,
-		"input", input,
+		"Target.Full", "Target.Full(ctx Context, id string) ([]Result, error)", "Full", targetCallerLocation(2), createdAtLocation,
+		"ctx", ctx, "input", input,
 	)
 	panic(msg)
 }
@@ -80,7 +76,10 @@ func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
 
 func (m *targetFull) buildCallHistory(sb *strings.Builder) {
 	for i, call := range m.Calls {
-		targetMessageCallHistory(sb, i, m.expects[i].location, call.location, "ctx", call.Arguments.ctx, "input", call.Arguments.input)
+		targetMessageCallHistory(
+			sb, i, m.expects[i].location, call.location,
+			"ctx", call.Arguments.ctx, "input", call.Arguments.input,
+		)
 	}
 }
 
@@ -102,20 +101,13 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
 	location := targetCallerLocation(3)
 
-	index := len(m.Calls) // index = v3
+	index := len(m.Calls)
 	if index >= len(m.expects) {
-		sb := strings.Builder{}
-		sb.WriteString("too many calls to Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", len(m.expects), index+1))
-		m.buildCallHistory(&sb)
-		sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", index+1, "missing"))
-		sb.WriteString(fmt.Sprintf("\t   called at: %s\n", location))
-		sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
-		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", ctx))     // 5 is max of len(ctx), len(input)
-		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", input)) // 5 is max of len(ctx), len(input)
-		sb.WriteString("\n")
-		sb.WriteString("\thint: remove unexpected call or add 1 more EXPECT:\n\t\t[var].EXPECT().Full(t)\n")
-		panic(sb.String())
+		msg := targetMessageTooManyCalls(
+			"Target.Full", "Full", len(m.expects), index+1, location, m.buildCallHistory,
+			"ctx", ctx, "input", input,
+		)
+		panic(msg)
 	}
 
 	expect := m.expects[index]
@@ -217,12 +209,9 @@ func (e *targetFullExpecter) Return(first []Result, second error) {
 
 func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch {
 	if matcher == nil {
-		e.target.expects[e.index].tb.Helper()
-		sb := strings.Builder{}
-		sb.WriteString("Target.Full Match received a nil function\n")
-		sb.WriteString("\thint: provide a valid function")
 		e.target.verifyDisabled = true
-		e.target.expects[e.index].tb.Fatal(sb.String())
+		e.target.expects[e.index].tb.Helper()
+		e.target.expects[e.index].tb.Fatal(targetMessageMatchByNil("Target.Full"))
 	}
 
 	e.target.expects[e.index].matcher = matcher
@@ -263,19 +252,14 @@ func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
 }
 
 func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Result, error)) *targetFull {
+	location := targetCallerLocation(2)
 	if stub == nil {
-		sb := strings.Builder{}
-		sb.WriteString("Target.Full STUB received a nil function\n")
-		sb.WriteString(fmt.Sprintf("called at: %s\n\n", targetCallerLocation(2)))
-		sb.WriteString("hint: provide a valid function\n")
-		panic(sb.String())
+		panic(targetMessageStubByNil("Target.Full", location))
 	}
 
 	if s.target.td.Full == nil {
 		s.target.td.Full = &targetFull{}
 	}
-
-	location := targetCallerLocation(2)
 
 	if s.target.td.Full.stub != nil {
 		sb := strings.Builder{}
@@ -315,21 +299,11 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 	location := targetCallerLocation(2)
 
 	if e.target.td.Full.stub != nil {
-		sb := strings.Builder{}
-		sb.WriteString("conflicting usage for Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "STUB used at", e.target.td.Full.stubLocation))
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "EXPECT used at", location))
-		sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
-		panic(sb.String())
+		panic(targetMessageExpectAfterStub("Target.Full", e.target.td.Full.stubLocation, location))
 	}
 
 	if tb == nil {
-		sb := strings.Builder{}
-		sb.WriteString("unexpected nil testing.TB in Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\tcalled at: %s\n\n", location))
-		sb.WriteString("\thint: EXPECT requires a valid testing.TB, use STUB instead:\n")
-		sb.WriteString("\t\tspy := [var].STUB().Full(func(...) ...)\n")
-		panic(sb.String())
+		panic(targetMessageExpectByNil("Target.Full", "Full", location))
 	}
 
 	e.target.td.Full.expects = append(e.target.td.Full.expects, &targetFullExpect{
@@ -347,19 +321,11 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		calls := e.target.td.Full.Calls
 		if index >= len(calls) {
 			tb.Helper()
-			sb := strings.Builder{}
-			sb.WriteString("Target.Full was not called as expected\n")
-			sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", len(expects), len(calls)))
-			e.target.td.Full.buildCallHistory(&sb)
-			sb.WriteString(fmt.Sprintf("\t#%d never called\n\n", index+1))
-			sb.WriteString("\thint: add the missing call or remove the EXPECT above")
-			tb.Fatal(sb.String())
+			tb.Fatal(targetMessageExpectButNotCalled("Target.Full", len(expects), len(calls), index+1, e.target.td.Full.buildCallHistory))
 		}
 	})
 	return &targetFullExpecter{index: index, target: e.target.td.Full}
 }
-
-// ---
 
 func testTarget() *target {
 	return &target{
