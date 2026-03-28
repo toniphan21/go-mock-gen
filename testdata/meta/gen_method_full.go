@@ -2,8 +2,6 @@ package meta
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -52,11 +50,10 @@ func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 	if m.td != nil && m.td.location != "" {
 		createdAtLocation = m.td.location
 	}
-	msg := targetMessageNotImplemented(
-		"Target.Full", "Target.Full(ctx Context, id string) ([]Result, error)", "Full", targetCallerLocation(2), createdAtLocation,
+	panic(libMessageNotImplemented(
+		"Target.Full", "Target.Full(ctx Context, id string) ([]Result, error)", "Full", libCallerLocation(2), createdAtLocation,
 		"ctx", ctx, "input", input,
-	)
-	panic(msg)
+	))
 }
 
 type targetFull struct {
@@ -76,7 +73,7 @@ func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
 
 func (m *targetFull) buildCallHistory(sb *strings.Builder) {
 	for i, call := range m.Calls {
-		targetMessageCallHistory(
+		libMessageCallHistory(
 			sb, i, m.expects[i].location, call.location,
 			"ctx", call.Arguments.ctx, "input", call.Arguments.input,
 		)
@@ -99,61 +96,44 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 }
 
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
-	location := targetCallerLocation(3)
+	location := libCallerLocation(3)
 
 	index := len(m.Calls)
 	if index >= len(m.expects) {
-		msg := targetMessageTooManyCalls(
+		panic(libMessageTooManyCalls(
 			"Target.Full", "Full", len(m.expects), index+1, location, m.buildCallHistory,
 			"ctx", ctx, "input", input,
-		)
-		panic(msg)
+		))
 	}
 
 	expect := m.expects[index]
 	if expect.matcher != nil {
 		if !expect.matcher(ctx, input) {
 			expect.tb.Helper()
-			sb := strings.Builder{}
-			sb.WriteString(fmt.Sprintf("Target.Full call #%d did not match\n", index+1))
-			sb.WriteString(fmt.Sprintf("arguments:\n"))
-			sb.WriteString(fmt.Sprintf("\t%5s = %#v\n", "ctx", ctx))     // 5 is max of len(ctx), len(input)
-			sb.WriteString(fmt.Sprintf("\t%5s = %#v\n", "input", input)) // 5 is max of len(ctx), len(input)
-			sb.WriteString("\n")
-			m.buildCallHistoryWithHeader(&sb)
-			sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", expect.location))
 			m.verifyDisabled = true
-			expect.tb.Fatal(sb.String())
+			expect.tb.Fatal(libMessageMatchFail(
+				"Target.Full", expect.location, index+1, m.buildCallHistoryWithHeader,
+				"ctx", ctx, "input", input,
+			))
 		}
 	}
 
 	if expect.arguments != nil {
-		if !reflect.DeepEqual(expect.arguments.ctx, ctx) {
+		var msg string
+		var ok bool
+
+		ok, msg = libCompareByReflectEqual("ctx", "Target.Full", expect.location, index+1, expect.arguments.ctx, ctx, m.buildCallHistoryWithHeader)
+		if !ok {
 			expect.tb.Helper()
-			sb := strings.Builder{}
-			sb.WriteString(fmt.Sprintf("Target.Full call #%d argument \"ctx\" did not match\n", index+1))
-			sb.WriteString(fmt.Sprintf("  want: %#v\n", expect.arguments.ctx))
-			sb.WriteString(fmt.Sprintf("   got: %#v\n", ctx))
-			sb.WriteString(fmt.Sprintf("method: reflect.DeepEqual\n"))
-			sb.WriteString("\n")
-			m.buildCallHistoryWithHeader(&sb)
-			sb.WriteString(fmt.Sprintf("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control", expect.location))
 			m.verifyDisabled = true
-			expect.tb.Fatal(sb.String())
+			expect.tb.Fatal(msg)
 		}
 
-		if expect.arguments.input != input {
+		ok, msg = libCompareByBasicComparison("input", "Target.Full", expect.location, index+1, expect.arguments.input, input, m.buildCallHistoryWithHeader)
+		if !ok {
 			expect.tb.Helper()
-			sb := strings.Builder{}
-			sb.WriteString(fmt.Sprintf("Target.Full call #%d argument \"input\" did not match\n", index+1))
-			sb.WriteString(fmt.Sprintf("  want: %#v\n", expect.arguments.input))
-			sb.WriteString(fmt.Sprintf("   got: %#v\n", input))
-			sb.WriteString(fmt.Sprintf("method: ==\n"))
-			sb.WriteString("\n")
-			m.buildCallHistoryWithHeader(&sb)
-			sb.WriteString(fmt.Sprintf("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control", expect.location))
 			m.verifyDisabled = true
-			expect.tb.Fatal(sb.String())
+			expect.tb.Fatal(msg)
 		}
 	}
 
@@ -211,11 +191,11 @@ func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input strin
 	if matcher == nil {
 		e.target.verifyDisabled = true
 		e.target.expects[e.index].tb.Helper()
-		e.target.expects[e.index].tb.Fatal(targetMessageMatchByNil("Target.Full"))
+		e.target.expects[e.index].tb.Fatal(libMessageMatchByNil("Target.Full"))
 	}
 
 	e.target.expects[e.index].matcher = matcher
-	e.target.expects[e.index].location = targetCallerLocation(2)
+	e.target.expects[e.index].location = libCallerLocation(2)
 	return &targetFullExpecterWithMatch{index: e.index, target: e.target}
 }
 
@@ -252,9 +232,9 @@ func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
 }
 
 func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Result, error)) *targetFull {
-	location := targetCallerLocation(2)
+	location := libCallerLocation(2)
 	if stub == nil {
-		panic(targetMessageStubByNil("Target.Full", location))
+		panic(libMessageStubByNil("Target.Full", location))
 	}
 
 	if s.target.td.Full == nil {
@@ -262,24 +242,14 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 	}
 
 	if s.target.td.Full.stub != nil {
-		sb := strings.Builder{}
-		sb.WriteString("duplicate STUB for Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "first used at", s.target.td.Full.stubLocation))
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "second used at", location))
-		sb.WriteString("\thint: Target.Full is already stubbed, remove one of the above\n\n")
 		s.target.td.Full.verifyDisabled = true
-		panic(sb.String())
+		panic(libMessageDuplicateStub("Target.Full", s.target.td.Full.stubLocation, location))
 	}
 
 	if len(s.target.td.Full.expects) > 0 {
 		expect := s.target.td.Full.expects[0]
-		sb := strings.Builder{}
-		sb.WriteString("conflicting usage for Target.Full\n")
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "EXPECT used at", expect.location))
-		sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "STUB used at", location))
-		sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
 		s.target.td.Full.verifyDisabled = true
-		panic(sb.String())
+		panic(libMessageStubAfterExpect("Target.Full", expect.location, location))
 	}
 
 	s.target.td.Full.stub = stub
@@ -296,14 +266,14 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		e.target.td.Full = &targetFull{}
 	}
 
-	location := targetCallerLocation(2)
+	location := libCallerLocation(2)
 
 	if e.target.td.Full.stub != nil {
-		panic(targetMessageExpectAfterStub("Target.Full", e.target.td.Full.stubLocation, location))
+		panic(libMessageExpectAfterStub("Target.Full", e.target.td.Full.stubLocation, location))
 	}
 
 	if tb == nil {
-		panic(targetMessageExpectByNil("Target.Full", "Full", location))
+		panic(libMessageExpectByNil("Target.Full", "Full", location))
 	}
 
 	e.target.td.Full.expects = append(e.target.td.Full.expects, &targetFullExpect{
@@ -321,7 +291,7 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		calls := e.target.td.Full.Calls
 		if index >= len(calls) {
 			tb.Helper()
-			tb.Fatal(targetMessageExpectButNotCalled("Target.Full", len(expects), len(calls), index+1, e.target.td.Full.buildCallHistory))
+			tb.Fatal(libMessageExpectButNotCalled("Target.Full", len(expects), len(calls), index+1, e.target.td.Full.buildCallHistory))
 		}
 	})
 	return &targetFullExpecter{index: index, target: e.target.td.Full}
@@ -330,7 +300,7 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 func testTarget() *target {
 	return &target{
 		td: &targetTestDouble{
-			location: targetCallerLocation(2),
+			location: libCallerLocation(2),
 		},
 	}
 }
