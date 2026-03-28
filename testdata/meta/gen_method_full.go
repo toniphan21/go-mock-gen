@@ -64,6 +64,20 @@ type targetFull struct {
 	verified     bool
 }
 
+func (m *targetFull) methodName() string {
+	return "Full"
+}
+
+func (m *targetFull) interfaceName() string {
+	return "Target"
+}
+
+func (m *targetFull) fatal(index int, msg string) {
+	m.expects[index].tb.Helper()
+	m.verified = true
+	m.expects[index].tb.Fatal(msg)
+}
+
 func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
 	if len(m.Calls) > 0 {
 		sb.WriteString("call history:\n")
@@ -119,22 +133,9 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	}
 
 	if expect.arguments != nil {
-		var msg string
-		var ok bool
-
-		ok, msg = libCompareByReflectEqual("ctx", "Target.Full", expect.location, index+1, expect.arguments.ctx, ctx, m.buildCallHistoryWithHeader)
-		if !ok {
-			expect.tb.Helper()
-			m.verified = true
-			expect.tb.Fatal(msg)
-		}
-
-		ok, msg = libCompareByBasicComparison("input", "Target.Full", expect.location, index+1, expect.arguments.input, input, m.buildCallHistoryWithHeader)
-		if !ok {
-			expect.tb.Helper()
-			m.verified = true
-			expect.tb.Fatal(msg)
-		}
+		expect.tb.Helper()
+		libCompareByReflectEqual(m, expect.tb, "ctx", expect.arguments.ctx, ctx, expect.location, index)
+		libCompareByBasicComparison(m, expect.tb, "input", expect.arguments.input, input, expect.location, index)
 	}
 
 	m.Calls = append(m.Calls, targetFullCall{

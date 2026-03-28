@@ -7,20 +7,53 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"testing"
 )
 
-func libCompareByReflectEqual[T any](argName, target, expectAt string, callNo int, want T, got T, fn func(builder *strings.Builder)) (bool, string) {
-	if reflect.DeepEqual(want, got) {
-		return true, ""
-	}
-	return false, libMessageArgumentMismatched(argName, target, expectAt, "reflect.DeepEqual", callNo, want, got, fn)
+type libMockMethod interface {
+	methodName() string
+	interfaceName() string
+	buildCallHistoryWithHeader(sb *strings.Builder)
+	buildCallHistory(sb *strings.Builder)
+	fatal(index int, msg string)
 }
 
-func libCompareByBasicComparison[T comparable](argName, target, expectAt string, callNo int, want T, got T, fn func(builder *strings.Builder)) (bool, string) {
-	if want == got {
-		return true, ""
+func libCompareByReflectEqual[M libMockMethod, T any](m M, tb testing.TB, argName string, want T, got T, expectAt string, index int) {
+	if reflect.DeepEqual(want, got) {
+		return
 	}
-	return false, libMessageArgumentMismatched(argName, target, expectAt, "==", callNo, want, got, fn)
+
+	tb.Helper()
+	msg := libMessageArgumentMismatched(
+		argName,
+		m.interfaceName()+"."+m.methodName(),
+		expectAt,
+		"reflect.DeepEqual",
+		index+1,
+		want,
+		got,
+		m.buildCallHistoryWithHeader,
+	)
+	m.fatal(index, msg)
+}
+
+func libCompareByBasicComparison[M libMockMethod, T comparable](m M, tb testing.TB, argName string, want T, got T, expectAt string, index int) {
+	if want == got {
+		return
+	}
+
+	tb.Helper()
+	msg := libMessageArgumentMismatched(
+		argName,
+		m.interfaceName()+"."+m.methodName(),
+		expectAt,
+		"==",
+		index+1,
+		want,
+		got,
+		m.buildCallHistoryWithHeader,
+	)
+	m.fatal(index, msg)
 }
 
 func libCallerLocation(skip int) string {
