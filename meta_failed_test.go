@@ -177,6 +177,22 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		hint: EXPECT requires a valid testing.TB, use STUB instead:
 			spy := [var].STUB().Full(func(...) ...)`,
 		},
+
+		{
+			name:    "Test_Pass_Nil_To_STUB",
+			isPanic: true,
+			expected: `Target.Full STUB received a nil function
+	called at: failed_bad_usage_test.go:62
+	
+	hint: provide a valid function`,
+		},
+
+		{
+			name: "Test_Pass_Nil_To_EXPECT_Match",
+			expected: `    failed_bad_usage_test.go:68: Target.Full Match received a nil function
+        	hint: provide a valid function
+`,
+		},
 		// ---
 	}
 

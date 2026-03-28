@@ -3,21 +3,72 @@ package meta
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 )
 
 // ---
 
+type target struct {
+	td *targetTestDouble
+}
+
+type targetTestDouble struct {
+	location string
+	Full     *targetFull
+}
+
+type targetStubber struct {
+	target *target
+}
+
+func (m *target) STUB() *targetStubber {
+	return &targetStubber{target: m}
+}
+
+type targetExpecter struct {
+	target *target
+}
+
+func (m *target) EXPECT() *targetExpecter {
+	return &targetExpecter{target: m}
+}
+
+func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
+	if m.td != nil && m.td.Full != nil && m.td.Full.stub != nil {
+		return m.td.Full.stub(ctx, input)
+	}
+
+	if m.td != nil && m.td.Full != nil && len(m.td.Full.expects) > 0 {
+		index := len(m.td.Full.Calls)
+		if index < len(m.td.Full.expects) {
+			m.td.Full.expects[index].tb.Helper()
+		}
+		return m.td.Full.invokeExpect(ctx, input)
+	}
+
+	createdAtLocation := ""
+	if m.td != nil && m.td.location != "" {
+		createdAtLocation = m.td.location
+	}
+	msg := targetMessageNotImplemented(
+		"Target.Full",
+		"Target.Full(ctx Context, id string) ([]Result, error)",
+		targetCallerLocation(2),
+		createdAtLocation,
+		"ctx", ctx,
+		"input", input,
+	)
+	panic(msg)
+}
+
 type targetFull struct {
 	Calls          []targetFullCall
 	stub           func(ctx context.Context, input string) ([]Result, error)
+	expects        []*targetFullExpect
 	stubLocation   string
 	verifyDisabled bool
-	expects        []*targetFullExpect
 }
 
 func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
@@ -29,12 +80,7 @@ func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
 
 func (m *targetFull) buildCallHistory(sb *strings.Builder) {
 	for i, call := range m.Calls {
-		sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", i+1, m.expects[i].location))
-		sb.WriteString(fmt.Sprintf("\t   called at: %s\n", call.location))
-		sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
-		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "ctx", call.Arguments.ctx))     // 5 is max of len(ctx), len(input)
-		sb.WriteString(fmt.Sprintf("\t\t%5s = %#v\n", "input", call.Arguments.input)) // 5 is max of len(ctx), len(input)
-		sb.WriteString("\n")
+		targetMessageCallHistory(sb, i, m.expects[i].location, call.location, "ctx", call.Arguments.ctx, "input", call.Arguments.input)
 	}
 }
 
@@ -54,8 +100,7 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 }
 
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
-	_, file, line, _ := runtime.Caller(2)                       // file = v0, line = v1
-	location := fmt.Sprintf("%s:%d", filepath.Base(file), line) // location = v2
+	location := targetCallerLocation(3)
 
 	index := len(m.Calls) // index = v3
 	if index >= len(m.expects) {
@@ -171,10 +216,17 @@ func (e *targetFullExpecter) Return(first []Result, second error) {
 }
 
 func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch {
+	if matcher == nil {
+		e.target.expects[e.index].tb.Helper()
+		sb := strings.Builder{}
+		sb.WriteString("Target.Full Match received a nil function\n")
+		sb.WriteString("\thint: provide a valid function")
+		e.target.verifyDisabled = true
+		e.target.expects[e.index].tb.Fatal(sb.String())
+	}
+
 	e.target.expects[e.index].matcher = matcher
-	_, file, line, _ := runtime.Caller(1)
-	location := fmt.Sprintf("%s:%d", filepath.Base(file), line)
-	e.target.expects[e.index].location = location
+	e.target.expects[e.index].location = targetCallerLocation(2)
 	return &targetFullExpecterWithMatch{index: e.index, target: e.target}
 }
 
@@ -211,11 +263,19 @@ func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
 }
 
 func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Result, error)) *targetFull {
+	if stub == nil {
+		sb := strings.Builder{}
+		sb.WriteString("Target.Full STUB received a nil function\n")
+		sb.WriteString(fmt.Sprintf("called at: %s\n\n", targetCallerLocation(2)))
+		sb.WriteString("hint: provide a valid function\n")
+		panic(sb.String())
+	}
+
 	if s.target.td.Full == nil {
 		s.target.td.Full = &targetFull{}
 	}
-	_, file, line, _ := runtime.Caller(1)
-	location := fmt.Sprintf("%s:%d", filepath.Base(file), line)
+
+	location := targetCallerLocation(2)
 
 	if s.target.td.Full.stub != nil {
 		sb := strings.Builder{}
@@ -252,8 +312,7 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		e.target.td.Full = &targetFull{}
 	}
 
-	_, file, line, _ := runtime.Caller(1)
-	location := fmt.Sprintf("%s:%d", filepath.Base(file), line)
+	location := targetCallerLocation(2)
 
 	if e.target.td.Full.stub != nil {
 		sb := strings.Builder{}
@@ -303,10 +362,9 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 // ---
 
 func testTarget() *target {
-	_, file, line, _ := runtime.Caller(1)
 	return &target{
 		td: &targetTestDouble{
-			location: fmt.Sprintf("%s:%d", filepath.Base(file), line),
+			location: targetCallerLocation(2),
 		},
 	}
 }
