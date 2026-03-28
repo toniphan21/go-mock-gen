@@ -151,6 +151,17 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	return expect.returns.first, expect.returns.second
 }
 
+func (m *targetFull) verify(index int) {
+	if m.verified {
+		return
+	}
+
+	if index >= len(m.Calls) {
+		m.expects[index].tb.Helper()
+		m.expects[index].tb.Fatal(libMessageExpectButNotCalled("Target.Full", len(m.expects), len(m.Calls), index+1, m.buildCallHistory))
+	}
+}
+
 type targetFullCall struct {
 	location  string
 	Arguments targetFullArgument
@@ -176,12 +187,12 @@ type targetFullExpect struct {
 }
 
 type targetFullExpecter struct {
-	index  int
 	target *targetFull
+	expect *targetFullExpect
 }
 
 func (e *targetFullExpecter) Return(first []Result, second error) {
-	e.target.expects[e.index].returns = targetFullReturn{
+	e.expect.returns = targetFullReturn{
 		first:  first,
 		second: second,
 	}
@@ -190,42 +201,40 @@ func (e *targetFullExpecter) Return(first []Result, second error) {
 func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch {
 	if matcher == nil {
 		e.target.verified = true
-		e.target.expects[e.index].tb.Helper()
-		e.target.expects[e.index].tb.Fatal(libMessageMatchByNil("Target.Full"))
+		e.expect.tb.Helper()
+		e.expect.tb.Fatal(libMessageMatchByNil("Target.Full"))
 	}
 
-	e.target.expects[e.index].matcher = matcher
-	e.target.expects[e.index].location = libCallerLocation(2)
-	return &targetFullExpecterWithMatch{index: e.index, target: e.target}
+	e.expect.matcher = matcher
+	e.expect.location = libCallerLocation(2)
+	return &targetFullExpecterWithMatch{expect: e.expect}
 }
 
 func (e *targetFullExpecter) CalledWith(ctx context.Context, input string) *targetFullExpecterWithArgs {
-	e.target.expects[e.index].arguments = &targetFullArgument{
+	e.expect.arguments = &targetFullArgument{
 		ctx:   ctx,
 		input: input,
 	}
-	return &targetFullExpecterWithArgs{index: e.index, target: e.target}
+	return &targetFullExpecterWithArgs{expect: e.expect}
 }
 
 type targetFullExpecterWithArgs struct {
-	index  int
-	target *targetFull
+	expect *targetFullExpect
 }
 
 func (e *targetFullExpecterWithArgs) Return(first []Result, second error) {
-	e.target.expects[e.index].returns = targetFullReturn{
+	e.expect.returns = targetFullReturn{
 		first:  first,
 		second: second,
 	}
 }
 
 type targetFullExpecterWithMatch struct {
-	index  int
-	target *targetFull
+	expect *targetFullExpect
 }
 
 func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
-	e.target.expects[e.index].returns = targetFullReturn{
+	e.expect.returns = targetFullReturn{
 		first:  first,
 		second: second,
 	}
@@ -237,23 +246,24 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 		panic(libMessageStubByNil("Target.Full", location))
 	}
 
-	if s.target.td.Full == nil {
-		s.target.td.Full = &targetFull{}
+	var spy = s.target.td.Full
+	if spy == nil {
+		spy = &targetFull{stubLocation: location}
+		s.target.td.Full = spy
 	}
 
-	if s.target.td.Full.stub != nil {
-		s.target.td.Full.verified = true
-		panic(libMessageDuplicateStub("Target.Full", s.target.td.Full.stubLocation, location))
+	if spy.stub != nil {
+		spy.verified = true
+		panic(libMessageDuplicateStub("Target.Full", spy.stubLocation, location))
 	}
 
-	if len(s.target.td.Full.expects) > 0 {
-		s.target.td.Full.verified = true
-		panic(libMessageStubAfterExpect("Target.Full", s.target.td.Full.expects[0].location, location))
+	if len(spy.expects) > 0 {
+		spy.verified = true
+		panic(libMessageStubAfterExpect("Target.Full", spy.expects[0].location, location))
 	}
 
-	s.target.td.Full.stub = stub
-	s.target.td.Full.stubLocation = location
-	return s.target.td.Full
+	spy.stub = stub
+	return spy
 }
 
 func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
@@ -261,38 +271,33 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		e.target.td = &targetTestDouble{}
 	}
 
-	if e.target.td.Full == nil {
-		e.target.td.Full = &targetFull{}
+	var mock = e.target.td.Full
+	if mock == nil {
+		mock = &targetFull{}
+		e.target.td.Full = mock
 	}
 
 	location := libCallerLocation(2)
-
-	if e.target.td.Full.stub != nil {
-		panic(libMessageExpectAfterStub("Target.Full", e.target.td.Full.stubLocation, location))
+	if mock.stub != nil {
+		panic(libMessageExpectAfterStub("Target.Full", mock.stubLocation, location))
 	}
-
 	if tb == nil {
 		panic(libMessageExpectByNil("Target.Full", "Full", location))
 	}
 
-	e.target.td.Full.expects = append(e.target.td.Full.expects, &targetFullExpect{
+	mock.expects = append(mock.expects, &targetFullExpect{
 		location: location,
 		tb:       tb,
 	})
-	index := len(e.target.td.Full.expects) - 1
 
+	index := len(mock.expects) - 1
 	tb.Helper()
 	tb.Cleanup(func() {
-		if e.target.td.Full.verified {
-			return
-		}
-
-		if index >= len(e.target.td.Full.Calls) {
-			tb.Helper()
-			tb.Fatal(libMessageExpectButNotCalled("Target.Full", len(e.target.td.Full.expects), len(e.target.td.Full.Calls), index+1, e.target.td.Full.buildCallHistory))
-		}
+		tb.Helper()
+		mock.verify(index)
 	})
-	return &targetFullExpecter{index: index, target: e.target.td.Full}
+
+	return &targetFullExpecter{target: mock, expect: mock.expects[index]}
 }
 
 func testTarget() *target {
