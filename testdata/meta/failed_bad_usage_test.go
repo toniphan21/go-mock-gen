@@ -62,6 +62,13 @@ func Test_Pass_Nil_To_STUB(t *testing.T) {
 	mock.STUB().Full(nil)
 }
 
+func Test_Pass_Nil_To_STUB_After_Expect(t *testing.T) {
+	mock := testTarget()
+
+	mock.EXPECT().Full(t)
+	mock.STUB().Full(nil)
+}
+
 func Test_Pass_Nil_To_EXPECT_Match(t *testing.T) {
 	mock := testTarget()
 

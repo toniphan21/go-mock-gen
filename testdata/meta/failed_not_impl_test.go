@@ -11,7 +11,7 @@ func Test_Not_Implemented(t *testing.T) {
 	_, _ = mock.Full(context.Background(), "anything")
 }
 
-func Test_Not_Implemented_Via_Ctor(t *testing.T) {
+func Test_Not_Implemented_Via_Struct(t *testing.T) {
 	mock := &target{}
 
 	_, _ = mock.Full(context.Background(), "anything")

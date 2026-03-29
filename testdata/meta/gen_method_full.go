@@ -78,6 +78,11 @@ func (m *targetFull) fatal(index int, msg string) {
 	m.expects[index].tb.Fatal(msg)
 }
 
+func (m *targetFull) panic(msg string) {
+	m.verified = true
+	panic(msg)
+}
+
 func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
 	if len(m.Calls) > 0 {
 		sb.WriteString("call history:\n")
@@ -194,7 +199,7 @@ func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input strin
 	if matcher == nil {
 		e.target.verified = true
 		e.expect.tb.Helper()
-		e.expect.tb.Fatal(libMessageMatchByNil("Target.Full"))
+		e.expect.tb.Fatal(libMessageMatchByNil(e.target))
 	}
 
 	e.expect.matcher = matcher
@@ -233,8 +238,8 @@ func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
 }
 
 func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Result, error)) *targetFull {
-	if stub == nil {
-		panic(libMessageStubByNil("Target.Full", libCallerLocation(2)))
+	if s.target.td == nil {
+		s.target.td = &targetTestDouble{}
 	}
 
 	var spy = s.target.td.Full
@@ -243,14 +248,16 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 		s.target.td.Full = spy
 	}
 
+	if stub == nil {
+		spy.panic(libMessageStubByNil(spy, libCallerLocation(2)))
+	}
+
 	if spy.stub != nil {
-		spy.verified = true
-		panic(libMessageDuplicateStub(spy, spy.stubLocation))
+		spy.panic(libMessageDuplicateStub(spy, spy.stubLocation))
 	}
 
 	if len(spy.expects) > 0 {
-		spy.verified = true
-		panic(libMessageStubAfterExpect(spy, spy.expects[0].location))
+		spy.panic(libMessageStubAfterExpect(spy, spy.expects[0].location))
 	}
 
 	spy.stub = stub
@@ -271,6 +278,7 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 	if mock.stub != nil {
 		panic(libMessageExpectAfterStub(mock, mock.stubLocation))
 	}
+
 	if tb == nil {
 		panic(libMessageExpectByNil(mock))
 	}

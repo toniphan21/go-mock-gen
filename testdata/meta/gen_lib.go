@@ -16,6 +16,7 @@ type libMockMethod interface {
 	buildCallHistoryWithHeader(sb *strings.Builder)
 	buildCallHistory(sb *strings.Builder)
 	fatal(index int, msg string)
+	panic(msg string)
 }
 
 func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args ...any) string {
@@ -143,9 +144,9 @@ func libMessageTooManyCalls(m libMockMethod, want, got int, args ...any) string 
 	return sb.String()
 }
 
-func libMessageMatchByNil(target string) string {
+func libMessageMatchByNil(m libMockMethod) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s Match received a nil function\n", target))
+	sb.WriteString(fmt.Sprintf("%s.%s Match received a nil function\n", m.interfaceName(), m.methodName()))
 	sb.WriteString("\thint: provide a valid function")
 	return sb.String()
 }
@@ -180,9 +181,9 @@ func libMessageExpectAfterStub(m libMockMethod, stubAt string) string {
 	return sb.String()
 }
 
-func libMessageStubByNil(target, calledAt string) string {
+func libMessageStubByNil(m libMockMethod, calledAt string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s STUB received a nil function\n", target))
+	sb.WriteString(fmt.Sprintf("%s.%s STUB received a nil function\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("called at: %s\n\n", calledAt))
 	sb.WriteString("hint: provide a valid function\n")
 	return sb.String()

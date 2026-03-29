@@ -88,7 +88,7 @@ func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Not_Implemented_Via_Ctor",
+			name:    "Test_Not_Implemented_Via_Struct",
 			isPanic: true,
 			expected: `unexpected call to Target.Full
 	signature: Target.Full(ctx Context, id string) ([]Result, error)
@@ -188,8 +188,17 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
+			name:    "Test_Pass_Nil_To_STUB_After_Expect",
+			isPanic: true,
+			expected: `Target.Full STUB received a nil function
+	called at: failed_bad_usage_test.go:69
+	
+	hint: provide a valid function`,
+		},
+
+		{
 			name: "Test_Pass_Nil_To_EXPECT_Match",
-			expected: `    failed_bad_usage_test.go:68: Target.Full Match received a nil function
+			expected: `    failed_bad_usage_test.go:75: Target.Full Match received a nil function
         	hint: provide a valid function
 `,
 		},
