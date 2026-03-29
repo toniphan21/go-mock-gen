@@ -13,19 +13,18 @@ import (
 type libMockMethod interface {
 	methodName() string
 	interfaceName() string
-	buildCallHistoryWithHeader(sb *strings.Builder)
-	buildCallHistory(sb *strings.Builder)
+	buildCallHistory(sb *strings.Builder, header string)
 	fatal(index int, msg string)
 	panic(msg string)
 }
 
-func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args ...any) string {
+func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s call #%d did not match\n", m.interfaceName(), m.methodName(), index+1))
 	sb.WriteString(fmt.Sprintf("arguments:\n"))
 	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
 	sb.WriteString("\n")
-	m.buildCallHistoryWithHeader(sb)
+	m.buildCallHistory(sb, "call history")
 	sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", matchedAt))
 	return sb.String()
 }
@@ -43,7 +42,9 @@ func libCompareByReflectEqual[M libMockMethod, T any](m M, argName string, want 
 		"reflect.DeepEqual",
 		index+1,
 		want, got,
-		m.buildCallHistoryWithHeader,
+		func(sb *strings.Builder) {
+			m.buildCallHistory(sb, "call history")
+		},
 	)
 	m.fatal(index, msg)
 }
@@ -62,7 +63,9 @@ func libCompareByBasicComparison[M libMockMethod, T comparable](m M, argName str
 		index+1,
 		want,
 		got,
-		m.buildCallHistoryWithHeader,
+		func(sb *strings.Builder) {
+			m.buildCallHistory(sb, "call history")
+		},
 	)
 	m.fatal(index, msg)
 }
@@ -101,11 +104,11 @@ func libMessageWriteArguments(sb *strings.Builder, template string, args []any) 
 	}
 }
 
-func libMessageNotImplemented(target, signature, method, calledAt, createdLocation string, args ...any) string {
+func libMessageNotImplemented(interfaceName, methodName, signature, createdLocation string, args []any) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("unexpected call to %s\n", target))
-	sb.WriteString(fmt.Sprintf("signature: %s\n", signature))
-	sb.WriteString(fmt.Sprintf("called at: %s\n", calledAt))
+	sb.WriteString(fmt.Sprintf("unexpected call to %s.%s\n", interfaceName, methodName))
+	sb.WriteString(fmt.Sprintf("signature: %s.%s%s\n", interfaceName, methodName, signature))
+	sb.WriteString(fmt.Sprintf("called at: %s\n", libCallerLocation(3)))
 
 	sb.WriteString("arguments:\n")
 	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
@@ -116,12 +119,12 @@ func libMessageNotImplemented(target, signature, method, calledAt, createdLocati
 	}
 	sb.WriteString(fmt.Sprintf(
 		"\nhint:%s use one of:\n\t[var].EXPECT().%s(t)\n\t[var].STUB().%s(func(...) ...)\n\n",
-		location, method, method,
+		location, methodName, methodName,
 	))
 	return sb.String()
 }
 
-func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt string, args ...any) string {
+func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt string, args []any) string {
 	sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", index+1, expectedAt))
 	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", calledAt))
 	sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
@@ -130,11 +133,11 @@ func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt 
 	return sb.String()
 }
 
-func libMessageTooManyCalls(m libMockMethod, want, got int, args ...any) string {
+func libMessageTooManyCalls(m libMockMethod, want, got int, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("too many calls to %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
-	m.buildCallHistory(sb)
+	m.buildCallHistory(sb, "")
 	sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", got, "missing"))
 	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", libCallerLocation(4)))
 	sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
@@ -211,7 +214,7 @@ func libMessageExpectButNotCalled(m libMockMethod, want, got, index int) string 
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s was not called as expected\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
-	m.buildCallHistory(sb)
+	m.buildCallHistory(sb, "")
 	sb.WriteString(fmt.Sprintf("\t#%d never called\n\n", index+1))
 	sb.WriteString("\thint: add the missing call or remove the EXPECT above")
 	return sb.String()

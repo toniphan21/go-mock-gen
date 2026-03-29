@@ -2,6 +2,7 @@ package meta
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -34,26 +35,27 @@ func (m *target) EXPECT() *targetExpecter {
 }
 
 func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
-	if m.td != nil && m.td.Full != nil && m.td.Full.stub != nil {
-		return m.td.Full.invokeStub(ctx, input)
+	interfaceName, methodName, signature := "Target", "Full", "(ctx Context, id string) ([]Result, error)"
+	args := []any{"ctx", ctx, "input", input}
+
+	if m.td == nil {
+		panic(libMessageNotImplemented(interfaceName, methodName, signature, "", args))
 	}
 
-	if m.td != nil && m.td.Full != nil && len(m.td.Full.expects) > 0 {
-		index := len(m.td.Full.Calls)
-		if index < len(m.td.Full.expects) {
-			m.td.Full.expects[index].tb.Helper()
+	if mock := m.td.Full; mock != nil {
+		switch {
+		case mock.stub != nil:
+			return mock.invokeStub(ctx, input)
+
+		case len(mock.expects) > 0:
+			index := len(mock.Calls)
+			if index < len(mock.expects) {
+				mock.expects[index].tb.Helper()
+			}
+			return mock.invokeExpect(ctx, input)
 		}
-		return m.td.Full.invokeExpect(ctx, input)
 	}
-
-	createdAtLocation := ""
-	if m.td != nil && m.td.location != "" {
-		createdAtLocation = m.td.location
-	}
-	panic(libMessageNotImplemented(
-		"Target.Full", "Target.Full(ctx Context, id string) ([]Result, error)", "Full", libCallerLocation(2), createdAtLocation,
-		"ctx", ctx, "input", input,
-	))
+	panic(libMessageNotImplemented(interfaceName, methodName, signature, m.td.location, args))
 }
 
 type targetFull struct {
@@ -73,8 +75,8 @@ func (m *targetFull) interfaceName() string {
 }
 
 func (m *targetFull) fatal(index int, msg string) {
-	m.expects[index].tb.Helper()
 	m.verified = true
+	m.expects[index].tb.Helper()
 	m.expects[index].tb.Fatal(msg)
 }
 
@@ -83,19 +85,14 @@ func (m *targetFull) panic(msg string) {
 	panic(msg)
 }
 
-func (m *targetFull) buildCallHistoryWithHeader(sb *strings.Builder) {
-	if len(m.Calls) > 0 {
-		sb.WriteString("call history:\n")
-		m.buildCallHistory(sb)
+func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
+	if header != "" && len(m.Calls) != 0 {
+		sb.WriteString(fmt.Sprintf("%s:\n", header))
 	}
-}
 
-func (m *targetFull) buildCallHistory(sb *strings.Builder) {
 	for i, call := range m.Calls {
-		libMessageCallHistory(
-			sb, i, m.expects[i].location, call.location,
-			"ctx", call.Arguments.ctx, "input", call.Arguments.input,
-		)
+		args := []any{"ctx", call.Arguments.ctx, "input", call.Arguments.input}
+		libMessageCallHistory(sb, i, m.expects[i].location, call.location, args)
 	}
 }
 
@@ -115,21 +112,16 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 }
 
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
+	args := []any{"ctx", ctx, "input", input}
 	index := len(m.Calls)
 	if index >= len(m.expects) {
-		panic(libMessageTooManyCalls(m, len(m.expects), index+1,
-			"ctx", ctx, "input", input,
-		))
+		panic(libMessageTooManyCalls(m, len(m.expects), index+1, args))
 	}
 
 	expect := m.expects[index]
-	if expect.matcher != nil {
-		if !expect.matcher(ctx, input) {
-			expect.tb.Helper()
-			m.fatal(index, libMessageMatchFail(m, expect.location, index,
-				"ctx", ctx, "input", input,
-			))
-		}
+	if expect.matcher != nil && !expect.matcher(ctx, input) {
+		expect.tb.Helper()
+		m.fatal(index, libMessageMatchFail(m, expect.location, index, args))
 	}
 
 	if expect.arguments != nil {
@@ -150,13 +142,6 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 		},
 	})
 	return expect.returns.first, expect.returns.second
-}
-
-func (m *targetFull) verify(index int) {
-	if !m.verified && index >= len(m.Calls) {
-		m.expects[index].tb.Helper()
-		m.expects[index].tb.Fatal(libMessageExpectButNotCalled(m, len(m.expects), len(m.Calls), index))
-	}
 }
 
 type targetFullCall struct {
@@ -180,6 +165,7 @@ type targetFullExpect struct {
 	arguments *targetFullArgument
 	returns   targetFullReturn
 	location  string
+	index     int
 	tb        testing.TB
 }
 
@@ -197,9 +183,8 @@ func (e *targetFullExpecter) Return(first []Result, second error) {
 
 func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch {
 	if matcher == nil {
-		e.target.verified = true
 		e.expect.tb.Helper()
-		e.expect.tb.Fatal(libMessageMatchByNil(e.target))
+		e.target.fatal(e.expect.index, libMessageMatchByNil(e.target))
 	}
 
 	e.expect.matcher = matcher
@@ -283,16 +268,19 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 		panic(libMessageExpectByNil(mock))
 	}
 
+	index := len(mock.expects)
 	mock.expects = append(mock.expects, &targetFullExpect{
 		location: libCallerLocation(2),
+		index:    index,
 		tb:       tb,
 	})
 
-	index := len(mock.expects) - 1
 	tb.Helper()
 	tb.Cleanup(func() {
-		tb.Helper()
-		mock.verify(index)
+		if !mock.verified && index >= len(mock.Calls) {
+			mock.expects[index].tb.Helper()
+			mock.fatal(index, libMessageExpectButNotCalled(mock, len(mock.expects), len(mock.Calls), index))
+		}
 	})
 
 	return &targetFullExpecter{target: mock, expect: mock.expects[index]}
