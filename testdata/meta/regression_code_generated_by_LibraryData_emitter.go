@@ -1,15 +1,5 @@
 package meta
 
-// This file contains the expected output of go-mock-gen, used as a golden file for regression tests.
-// To make changes:
-//  1. Delete the generated regression test code.
-//  2. Make your changes.
-//  3. Run all meta tests.
-//  4. Once the tests pass and the output looks correct, go to LibraryData to generate the code.
-//  5. Regenerate the regression test code.
-//  6. Uncomment the code here.
-
-/*
 import (
 	"fmt"
 	"path/filepath"
@@ -20,13 +10,11 @@ import (
 	"testing"
 )
 
-// done - LibraryData.CallerLocationCode()
 func libCallerLocation(skip int) string {
 	_, file, line, _ := runtime.Caller(skip)
 	return fmt.Sprintf("%s:%d", filepath.Base(file), line)
 }
 
-// done - LibraryData.MethodInterfaceCode()
 type libMockMethod interface {
 	methodName() string
 	interfaceName() string
@@ -35,7 +23,6 @@ type libMockMethod interface {
 	panic(msg string)
 }
 
-// done - LibraryData.MessageWriteArgumentsCode()
 func libMessageWriteArguments(sb *strings.Builder, template string, args []any) {
 	maxLen := 0
 	for i := 0; i < len(args); i += 2 {
@@ -61,7 +48,6 @@ func libMessageWriteArguments(sb *strings.Builder, template string, args []any) 
 	}
 }
 
-// done - LibraryData.MessageMatchFailCode()
 func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s call #%d did not match\n", m.interfaceName(), m.methodName(), index+1))
@@ -73,8 +59,7 @@ func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args []an
 	return sb.String()
 }
 
-// done - LibraryData.MessageArgumentMismatchedCode()
-func libMessageArgumentMismatched(m libMockMethod, argName, expectAt string, comparedBy string, callNo int, want any, got any) string {
+func libMessageArgumentMismatched(m libMockMethod, argName string, expectAt string, comparedBy string, callNo int, want any, got any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s call #%d argument \"%s\" did not match\n", m.interfaceName(), m.methodName(), callNo, argName))
 	sb.WriteString(fmt.Sprintf("  want: %#v\n", want))
@@ -86,13 +71,11 @@ func libMessageArgumentMismatched(m libMockMethod, argName, expectAt string, com
 	return sb.String()
 }
 
-// done - LibraryData.MessageNotImplementedCode()
-func libMessageNotImplemented(interfaceName, methodName, signature, createdLocation string, args []any) string {
+func libMessageNotImplemented(interfaceName string, methodName string, signature string, createdLocation string, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("unexpected call to %s.%s\n", interfaceName, methodName))
 	sb.WriteString(fmt.Sprintf("signature: %s.%s%s\n", interfaceName, methodName, signature))
 	sb.WriteString(fmt.Sprintf("called at: %s\n", libCallerLocation(3)))
-
 	sb.WriteString("arguments:\n")
 	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
 
@@ -100,15 +83,11 @@ func libMessageNotImplemented(interfaceName, methodName, signature, createdLocat
 	if createdLocation != "" {
 		location = " after " + createdLocation
 	}
-	sb.WriteString(fmt.Sprintf(
-		"\nhint:%s use one of:\n\t[var].EXPECT().%s(t)\n\t[var].STUB().%s(func(...) ...)\n\n",
-		location, methodName, methodName,
-	))
+	sb.WriteString(fmt.Sprintf("\nhint:%s use one of:\n\t[var].EXPECT().%s(t)\n\t[var].STUB().%s(func(...) ...)\n\n", location, methodName, methodName))
 	return sb.String()
 }
 
-// done - LibraryData.MessageCallHistoryCode()
-func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt string, args []any) string {
+func libMessageCallHistory(sb *strings.Builder, index int, expectedAt string, calledAt string, args []any) string {
 	sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", index+1, expectedAt))
 	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", calledAt))
 	sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
@@ -117,8 +96,7 @@ func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt 
 	return sb.String()
 }
 
-// done - LibraryData.MessageTooManyCallsCode()
-func libMessageTooManyCalls(m libMockMethod, want, got int, args []any) string {
+func libMessageTooManyCalls(m libMockMethod, want int, got int, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("too many calls to %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
@@ -132,7 +110,6 @@ func libMessageTooManyCalls(m libMockMethod, want, got int, args []any) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageMatchByNilCode()
 func libMessageMatchByNil(m libMockMethod) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s Match received a nil function\n", m.interfaceName(), m.methodName()))
@@ -140,7 +117,6 @@ func libMessageMatchByNil(m libMockMethod) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageExpectByNilCode()
 func libMessageExpectByNil(m libMockMethod) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("unexpected nil testing.TB in %s.%s\n", m.interfaceName(), m.methodName()))
@@ -150,7 +126,6 @@ func libMessageExpectByNil(m libMockMethod) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageExpectAfterStubCode()
 func libMessageExpectAfterStub(m libMockMethod, stubAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
@@ -160,7 +135,6 @@ func libMessageExpectAfterStub(m libMockMethod, stubAt string) string {
 	return sb.String()
 }
 
-// LibraryData.MessageStubByNilCode()
 func libMessageStubByNil(m libMockMethod, calledAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s STUB received a nil function\n", m.interfaceName(), m.methodName()))
@@ -169,7 +143,6 @@ func libMessageStubByNil(m libMockMethod, calledAt string) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageStubAfterExpectCode()
 func libMessageStubAfterExpect(m libMockMethod, expectAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
@@ -179,7 +152,6 @@ func libMessageStubAfterExpect(m libMockMethod, expectAt string) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageDuplicateStubCode()
 func libMessageDuplicateStub(m libMockMethod, firstUsedAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("duplicate STUB for %s.%s\n", m.interfaceName(), m.methodName()))
@@ -189,8 +161,7 @@ func libMessageDuplicateStub(m libMockMethod, firstUsedAt string) string {
 	return sb.String()
 }
 
-// done - LibraryData.MessageExpectButNotCalledCode()
-func libMessageExpectButNotCalled(m libMockMethod, want, got, index int) string {
+func libMessageExpectButNotCalled(m libMockMethod, want int, got int, index int) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s.%s was not called as expected\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
@@ -200,7 +171,6 @@ func libMessageExpectButNotCalled(m libMockMethod, want, got, index int) string 
 	return sb.String()
 }
 
-// done - LibraryData.CompareByReflectEqualCode()
 func libCompareByReflectEqual[M libMockMethod, T any](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
 	if reflect.DeepEqual(want, got) {
 		return
@@ -210,7 +180,6 @@ func libCompareByReflectEqual[M libMockMethod, T any](m M, argName string, want 
 	m.fatal(index, libMessageArgumentMismatched(m, argName, expectAt, "reflect.DeepEqual", index+1, want, got))
 }
 
-// done - LibraryData.CompareByBasicComparisonCode()
 func libCompareByBasicComparison[M libMockMethod, T comparable](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
 	if want == got {
 		return
@@ -219,4 +188,3 @@ func libCompareByBasicComparison[M libMockMethod, T comparable](m M, argName str
 	tb.Helper()
 	m.fatal(index, libMessageArgumentMismatched(m, argName, expectAt, "==", index+1, want, got))
 }
-*/

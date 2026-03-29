@@ -1,13 +1,58 @@
 package mockgen
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/dave/jennifer/jen"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// Run this test first to generate the library output before running other tests.
+// This acts as a regression check to ensure the generated library code works correctly.
+func Test_GenerateCode_As_Regression_Test(t *testing.T) {
+	lib := &LibraryData{
+		CallerLocationFunc:            "libCallerLocation",
+		MethodInterface:               "libMockMethod",
+		MessageWriteArgumentsFunc:     "libMessageWriteArguments",
+		MessageMatchFailFunc:          "libMessageMatchFail",
+		MessageArgumentMismatchedFunc: "libMessageArgumentMismatched",
+		MessageNotImplementedFunc:     "libMessageNotImplemented",
+		MessageCallHistoryFunc:        "libMessageCallHistory",
+		MessageTooManyCallsFunc:       "libMessageTooManyCalls",
+		MessageMatchByNilFunc:         "libMessageMatchByNil",
+		MessageExpectByNilFunc:        "libMessageExpectByNil",
+		MessageExpectAfterStubFunc:    "libMessageExpectAfterStub",
+		MessageStubByNilFunc:          "libMessageStubByNil",
+		MessageStubAfterExpectFunc:    "libMessageStubAfterExpect",
+		MessageDuplicateStubFunc:      "libMessageDuplicateStub",
+		MessageExpectButNotCalledFunc: "libMessageExpectButNotCalled",
+		CompareByReflectEqualFunc:     "libCompareByReflectEqual",
+		CompareByBasicComparisonFunc:  "libCompareByBasicComparison",
+	}
+
+	_, filename, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(filename)
+	goldenPath := filepath.Join(testDir, "testdata", "meta", "regression_code_generated_by_LibraryData_emitter.go")
+	fmt.Println(goldenPath)
+
+	jf := jen.NewFile("meta")
+	codes := lib.GenerateCode()
+	for _, code := range codes {
+		jf.Add(code)
+	}
+	out := jf.GoString()
+
+	err := os.WriteFile(goldenPath, []byte(out), 0644)
+	require.NoError(t, err)
+}
 
 func extractOutput(in []byte) string {
 	output := string(in)
