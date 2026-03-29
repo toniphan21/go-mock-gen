@@ -18,7 +18,7 @@ type libMockMethod interface {
 	fatal(index int, msg string)
 }
 
-func libCompareByReflectEqual[M libMockMethod, T any](m M, tb testing.TB, argName string, want T, got T, expectAt string, index int) {
+func libCompareByReflectEqual[M libMockMethod, T any](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
 	if reflect.DeepEqual(want, got) {
 		return
 	}
@@ -30,14 +30,13 @@ func libCompareByReflectEqual[M libMockMethod, T any](m M, tb testing.TB, argNam
 		expectAt,
 		"reflect.DeepEqual",
 		index+1,
-		want,
-		got,
+		want, got,
 		m.buildCallHistoryWithHeader,
 	)
 	m.fatal(index, msg)
 }
 
-func libCompareByBasicComparison[M libMockMethod, T comparable](m M, tb testing.TB, argName string, want T, got T, expectAt string, index int) {
+func libCompareByBasicComparison[M libMockMethod, T comparable](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
 	if want == got {
 		return
 	}
@@ -119,17 +118,17 @@ func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt 
 	return sb.String()
 }
 
-func libMessageTooManyCalls(target, method string, want, got int, calledAt string, fn func(sb *strings.Builder), args ...any) string {
+func libMessageTooManyCalls(m libMockMethod, want, got int, calledAt string, args ...any) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("too many calls to %s\n", target))
+	sb.WriteString(fmt.Sprintf("too many calls to %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
-	fn(sb)
+	m.buildCallHistory(sb)
 	sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", got, "missing"))
 	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", calledAt))
 	sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
 	libMessageWriteArguments(sb, "\t\t%[MAX-KEY-LEN]s = %#v\n", args)
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("\thint: remove unexpected call or add 1 more EXPECT:\n\t\t[var].EXPECT().%s(t)\n", method))
+	sb.WriteString(fmt.Sprintf("\thint: remove unexpected call or add 1 more EXPECT:\n\t\t[var].EXPECT().%s(t)\n", m.methodName()))
 	return sb.String()
 }
 
@@ -140,13 +139,13 @@ func libMessageMatchByNil(target string) string {
 	return sb.String()
 }
 
-func libMessageMatchFail(target, matchedAt string, callNo int, fn func(*strings.Builder), args ...any) string {
+func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args ...any) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s call #%d did not match\n", target, callNo))
+	sb.WriteString(fmt.Sprintf("%s.%s call #%d did not match\n", m.interfaceName(), m.methodName(), index+1))
 	sb.WriteString(fmt.Sprintf("arguments:\n"))
 	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
 	sb.WriteString("\n")
-	fn(sb)
+	m.buildCallHistoryWithHeader(sb)
 	sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", matchedAt))
 	return sb.String()
 }
@@ -163,18 +162,18 @@ func libMessageArgumentMismatched(argName, target, expectAt string, comparedBy s
 	return sb.String()
 }
 
-func libMessageExpectByNil(target, method, calledAt string) string {
+func libMessageExpectByNil(m libMockMethod, calledAt string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("unexpected nil testing.TB in %s\n", target))
+	sb.WriteString(fmt.Sprintf("unexpected nil testing.TB in %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\tcalled at: %s\n\n", calledAt))
 	sb.WriteString("\thint: EXPECT requires a valid testing.TB, use STUB instead:\n")
-	sb.WriteString(fmt.Sprintf("\t\tspy := [var].STUB().%s(func(...) ...)\n", method))
+	sb.WriteString(fmt.Sprintf("\t\tspy := [var].STUB().%s(func(...) ...)\n", m.methodName()))
 	panic(sb.String())
 }
 
-func libMessageExpectAfterStub(target, stubAt, expectAt string) string {
+func libMessageExpectAfterStub(m libMockMethod, stubAt, expectAt string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("conflicting usage for %s\n", target))
+	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "STUB used at", stubAt))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "EXPECT used at", expectAt))
 	sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
@@ -189,30 +188,30 @@ func libMessageStubByNil(target, calledAt string) string {
 	return sb.String()
 }
 
-func libMessageStubAfterExpect(target, expectAt, stubAt string) string {
+func libMessageStubAfterExpect(m libMockMethod, expectAt, stubAt string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("conflicting usage for %s\n", target))
+	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "EXPECT used at", expectAt))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "STUB used at", stubAt))
 	sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
 	return sb.String()
 }
 
-func libMessageDuplicateStub(target, first, second string) string {
+func libMessageDuplicateStub(m libMockMethod, first, second string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("duplicate STUB for %s\n", target))
+	sb.WriteString(fmt.Sprintf("duplicate STUB for %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "first used at", first))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "second used at", second))
-	sb.WriteString(fmt.Sprintf("\thint: %s is already stubbed, remove one of the above\n\n", target))
+	sb.WriteString(fmt.Sprintf("\thint: %s.%s is already stubbed, remove one of the above\n\n", m.interfaceName(), m.methodName()))
 	return sb.String()
 }
 
-func libMessageExpectButNotCalled(target string, want, got, expectNo int, fn func(sb *strings.Builder)) string {
+func libMessageExpectButNotCalled(m libMockMethod, want, got, index int) string {
 	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s was not called as expected\n", target))
+	sb.WriteString(fmt.Sprintf("%s.%s was not called as expected\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
-	fn(sb)
-	sb.WriteString(fmt.Sprintf("\t#%d never called\n\n", expectNo))
+	m.buildCallHistory(sb)
+	sb.WriteString(fmt.Sprintf("\t#%d never called\n\n", index+1))
 	sb.WriteString("\thint: add the missing call or remove the EXPECT above")
 	return sb.String()
 }
