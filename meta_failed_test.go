@@ -43,14 +43,14 @@ func extractPanicMessage(input string) string {
 	return input
 }
 
-type failureOutputTestCase struct {
+type metaFailedOutputTestCase struct {
 	name     string
 	test     string
 	isPanic  bool
 	expected string
 }
 
-func (c *failureOutputTestCase) Run(t *testing.T) {
+func (c *metaFailedOutputTestCase) Run(t *testing.T) {
 	testDir := "./testdata/meta"
 	testName := c.test
 	if testName == "" {
@@ -71,7 +71,7 @@ func (c *failureOutputTestCase) Run(t *testing.T) {
 }
 
 func Test_MockFailureOutput_NotImplemented(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name:    "Test_Not_Implemented",
 			isPanic: true,
@@ -127,7 +127,7 @@ func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 }
 
 func Test_MockFailureOutput_BadUsage(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name:    "Test_Use_STUB_Twice",
 			isPanic: true,
@@ -202,6 +202,16 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
         	hint: provide a valid function
 `,
 		},
+
+		{
+			name:    "Test_Pass_Nil_To_EXPECT_After_EXPECT",
+			isPanic: true,
+			expected: `unexpected nil testing.TB in Target.Full
+		called at: failed_bad_usage_test.go:82
+	
+		hint: EXPECT requires a valid testing.TB, use STUB instead:
+			spy := [var].STUB().Full(func(...) ...)`,
+		},
 		// ---
 	}
 
@@ -213,7 +223,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 }
 
 func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name:    "Test_One_EXPECT_Call_Twice",
 			isPanic: true,
@@ -324,7 +334,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 }
 
 func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name: "Test_Two_EXPECT_Call_Once",
 			expected: `    failed_call_less_than_expected_test.go:12: Target.Full was not called as expected
@@ -415,7 +425,7 @@ func Test_MockFailureOutput_CalledLessThanExpected(t *testing.T) {
 }
 
 func Test_MockFailureOutput_Match(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name: "Test_Match_Fail_FirstCall",
 			expected: `    failed_match_test.go:15: Target.Full call #1 did not match
@@ -483,7 +493,7 @@ func Test_MockFailureOutput_Match(t *testing.T) {
 }
 
 func Test_MockFailureOutput_CalledWith(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name: "Test_CallWith_Fail_FirstCall_FirstArgument",
 			expected: `    failed_called_with_test.go:14: Target.Full call #1 argument "ctx" did not match
@@ -617,7 +627,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
 }
 
 func Test_MockFailureOutput_Stub(t *testing.T) {
-	cases := []failureOutputTestCase{
+	cases := []metaFailedOutputTestCase{
 		{
 			name: "Test_Stub_Fail_Not_Called",
 			expected: `    failed_stub_test.go:16: want 1, got 0

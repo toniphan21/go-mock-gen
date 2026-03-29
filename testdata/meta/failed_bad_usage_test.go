@@ -74,3 +74,10 @@ func Test_Pass_Nil_To_EXPECT_Match(t *testing.T) {
 
 	mock.EXPECT().Full(t).Match(nil)
 }
+
+func Test_Pass_Nil_To_EXPECT_After_EXPECT(t *testing.T) {
+	mock := testTarget()
+
+	mock.EXPECT().Full(t)
+	mock.EXPECT().Full(nil)
+}

@@ -172,7 +172,7 @@ func libMessageExpectByNil(m libMockMethod) string {
 	sb.WriteString(fmt.Sprintf("\tcalled at: %s\n\n", libCallerLocation(3)))
 	sb.WriteString("\thint: EXPECT requires a valid testing.TB, use STUB instead:\n")
 	sb.WriteString(fmt.Sprintf("\t\tspy := [var].STUB().%s(func(...) ...)\n", m.methodName()))
-	panic(sb.String())
+	return sb.String()
 }
 
 func libMessageExpectAfterStub(m libMockMethod, stubAt string) string {
