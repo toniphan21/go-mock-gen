@@ -18,6 +18,17 @@ type libMockMethod interface {
 	fatal(index int, msg string)
 }
 
+func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args ...any) string {
+	sb := &strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s.%s call #%d did not match\n", m.interfaceName(), m.methodName(), index+1))
+	sb.WriteString(fmt.Sprintf("arguments:\n"))
+	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
+	sb.WriteString("\n")
+	m.buildCallHistoryWithHeader(sb)
+	sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", matchedAt))
+	return sb.String()
+}
+
 func libCompareByReflectEqual[M libMockMethod, T any](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
 	if reflect.DeepEqual(want, got) {
 		return
@@ -118,13 +129,13 @@ func libMessageCallHistory(sb *strings.Builder, index int, expectedAt, calledAt 
 	return sb.String()
 }
 
-func libMessageTooManyCalls(m libMockMethod, want, got int, calledAt string, args ...any) string {
+func libMessageTooManyCalls(m libMockMethod, want, got int, args ...any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("too many calls to %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\twant: %d, got: %d\n\n", want, got))
 	m.buildCallHistory(sb)
 	sb.WriteString(fmt.Sprintf("\t#%d expect at: %s\n", got, "missing"))
-	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", calledAt))
+	sb.WriteString(fmt.Sprintf("\t   called at: %s\n", libCallerLocation(4)))
 	sb.WriteString(fmt.Sprintf("\t   arguments:\n"))
 	libMessageWriteArguments(sb, "\t\t%[MAX-KEY-LEN]s = %#v\n", args)
 	sb.WriteString("\n")
@@ -136,17 +147,6 @@ func libMessageMatchByNil(target string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s Match received a nil function\n", target))
 	sb.WriteString("\thint: provide a valid function")
-	return sb.String()
-}
-
-func libMessageMatchFail(m libMockMethod, matchedAt string, index int, args ...any) string {
-	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s.%s call #%d did not match\n", m.interfaceName(), m.methodName(), index+1))
-	sb.WriteString(fmt.Sprintf("arguments:\n"))
-	libMessageWriteArguments(sb, "\t%[MAX-KEY-LEN]s = %#v\n", args)
-	sb.WriteString("\n")
-	m.buildCallHistoryWithHeader(sb)
-	sb.WriteString(fmt.Sprintf("hint: check the callback passed to Match at %s", matchedAt))
 	return sb.String()
 }
 
@@ -162,20 +162,20 @@ func libMessageArgumentMismatched(argName, target, expectAt string, comparedBy s
 	return sb.String()
 }
 
-func libMessageExpectByNil(m libMockMethod, calledAt string) string {
+func libMessageExpectByNil(m libMockMethod) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("unexpected nil testing.TB in %s.%s\n", m.interfaceName(), m.methodName()))
-	sb.WriteString(fmt.Sprintf("\tcalled at: %s\n\n", calledAt))
+	sb.WriteString(fmt.Sprintf("\tcalled at: %s\n\n", libCallerLocation(3)))
 	sb.WriteString("\thint: EXPECT requires a valid testing.TB, use STUB instead:\n")
 	sb.WriteString(fmt.Sprintf("\t\tspy := [var].STUB().%s(func(...) ...)\n", m.methodName()))
 	panic(sb.String())
 }
 
-func libMessageExpectAfterStub(m libMockMethod, stubAt, expectAt string) string {
+func libMessageExpectAfterStub(m libMockMethod, stubAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "STUB used at", stubAt))
-	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "EXPECT used at", expectAt))
+	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "EXPECT used at", libCallerLocation(3)))
 	sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
 	return sb.String()
 }
@@ -188,20 +188,20 @@ func libMessageStubByNil(target, calledAt string) string {
 	return sb.String()
 }
 
-func libMessageStubAfterExpect(m libMockMethod, expectAt, stubAt string) string {
+func libMessageStubAfterExpect(m libMockMethod, expectAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("conflicting usage for %s.%s\n", m.interfaceName(), m.methodName()))
 	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "EXPECT used at", expectAt))
-	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "STUB used at", stubAt))
+	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "STUB used at", libCallerLocation(3)))
 	sb.WriteString("\thint: use either EXPECT or STUB for the same method, not both\n\n")
 	return sb.String()
 }
 
-func libMessageDuplicateStub(m libMockMethod, first, second string) string {
+func libMessageDuplicateStub(m libMockMethod, firstUsedAt string) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("duplicate STUB for %s.%s\n", m.interfaceName(), m.methodName()))
-	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "first used at", first))
-	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "second used at", second))
+	sb.WriteString(fmt.Sprintf("\t%14s: %s\n", "first used at", firstUsedAt))
+	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "second used at", libCallerLocation(3)))
 	sb.WriteString(fmt.Sprintf("\thint: %s.%s is already stubbed, remove one of the above\n\n", m.interfaceName(), m.methodName()))
 	return sb.String()
 }

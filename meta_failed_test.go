@@ -606,3 +606,25 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
 		})
 	}
 }
+
+func Test_MockFailureOutput_Stub(t *testing.T) {
+	cases := []failureOutputTestCase{
+		{
+			name: "Test_Stub_Fail_Not_Called",
+			expected: `    failed_stub_test.go:16: want 1, got 0
+`,
+		},
+
+		{
+			name: "Test_Stub_Fail_Too_Many_Calls",
+			expected: `    failed_stub_test.go:31: want 1, got 2
+`,
+		},
+		// ---
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.Run(t)
+		})
+	}
+}

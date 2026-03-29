@@ -35,7 +35,7 @@ func (m *target) EXPECT() *targetExpecter {
 
 func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 	if m.td != nil && m.td.Full != nil && m.td.Full.stub != nil {
-		return m.td.Full.stub(ctx, input)
+		return m.td.Full.invokeStub(ctx, input)
 	}
 
 	if m.td != nil && m.td.Full != nil && len(m.td.Full.expects) > 0 {
@@ -110,12 +110,9 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 }
 
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
-	location := libCallerLocation(3)
-
 	index := len(m.Calls)
 	if index >= len(m.expects) {
-		panic(libMessageTooManyCalls(
-			m, len(m.expects), index+1, location,
+		panic(libMessageTooManyCalls(m, len(m.expects), index+1,
 			"ctx", ctx, "input", input,
 		))
 	}
@@ -124,9 +121,7 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	if expect.matcher != nil {
 		if !expect.matcher(ctx, input) {
 			expect.tb.Helper()
-			m.verified = true
-			expect.tb.Fatal(libMessageMatchFail(
-				m, expect.location, index,
+			m.fatal(index, libMessageMatchFail(m, expect.location, index,
 				"ctx", ctx, "input", input,
 			))
 		}
@@ -139,7 +134,7 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	}
 
 	m.Calls = append(m.Calls, targetFullCall{
-		location: location,
+		location: libCallerLocation(3),
 		Arguments: targetFullArgument{
 			ctx:   ctx,
 			input: input,
@@ -250,12 +245,12 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 
 	if spy.stub != nil {
 		spy.verified = true
-		panic(libMessageDuplicateStub(spy, spy.stubLocation, libCallerLocation(2)))
+		panic(libMessageDuplicateStub(spy, spy.stubLocation))
 	}
 
 	if len(spy.expects) > 0 {
 		spy.verified = true
-		panic(libMessageStubAfterExpect(spy, spy.expects[0].location, libCallerLocation(2)))
+		panic(libMessageStubAfterExpect(spy, spy.expects[0].location))
 	}
 
 	spy.stub = stub
@@ -274,10 +269,10 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 	}
 
 	if mock.stub != nil {
-		panic(libMessageExpectAfterStub(mock, mock.stubLocation, libCallerLocation(2)))
+		panic(libMessageExpectAfterStub(mock, mock.stubLocation))
 	}
 	if tb == nil {
-		panic(libMessageExpectByNil(mock, libCallerLocation(2)))
+		panic(libMessageExpectByNil(mock))
 	}
 
 	mock.expects = append(mock.expects, &targetFullExpect{
