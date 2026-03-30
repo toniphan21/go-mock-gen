@@ -59,18 +59,6 @@ func serviceMessageMatchFail(m serviceMockMethod, matchedAt string, index int, a
 	return sb.String()
 }
 
-func serviceMessageArgumentMismatched(m serviceMockMethod, argName string, expectAt string, comparedBy string, callNo int, want any, got any) string {
-	sb := &strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s.%s call #%d argument \"%s\" did not match\n", m.interfaceName(), m.methodName(), callNo, argName))
-	sb.WriteString(fmt.Sprintf("  want: %#v\n", want))
-	sb.WriteString(fmt.Sprintf("   got: %#v\n", got))
-	sb.WriteString(fmt.Sprintf("method: %s\n", comparedBy))
-	sb.WriteString("\n")
-	m.buildCallHistory(sb, "call history")
-	sb.WriteString(fmt.Sprintf("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control", expectAt))
-	return sb.String()
-}
-
 func serviceMessageNotImplemented(interfaceName string, methodName string, signature string, createdLocation string, args []any) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("unexpected call to %s.%s\n", interfaceName, methodName))
@@ -171,20 +159,64 @@ func serviceMessageExpectButNotCalled(m serviceMockMethod, want int, got int, in
 	return sb.String()
 }
 
-func serviceCompareByReflectEqual[M serviceMockMethod, T any](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
-	if reflect.DeepEqual(want, got) {
-		return
-	}
-
-	tb.Helper()
-	m.fatal(index, serviceMessageArgumentMismatched(m, argName, expectAt, "reflect.DeepEqual", index+1, want, got))
+func serviceMessageMatchArgByNil(m serviceMockMethod, method string) string {
+	sb := &strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s.%s %s received a nil function\n", m.interfaceName(), m.methodName(), method))
+	sb.WriteString("\thint: provide a valid function")
+	return sb.String()
 }
 
-func serviceCompareByBasicComparison[M serviceMockMethod, T comparable](m M, argName string, want T, got T, tb testing.TB, expectAt string, index int) {
-	if want == got {
+func serviceMessageDuplicateMatchArg(m serviceMockMethod, method string, firstUsedAt string) string {
+	sb := &strings.Builder{}
+	sb.WriteString(fmt.Sprintf("duplicate %s for %s.%s\n", method, m.interfaceName(), m.methodName()))
+	sb.WriteString(fmt.Sprintf("\t%14s: %s\n\n", "first used at", firstUsedAt))
+	sb.WriteString("\thint: each argument can only be matched once, remove one of the above")
+	return sb.String()
+}
+
+func serviceMessageMatchArgHint() string {
+	return fmt.Sprintf("\thint: check argument matching at %s\n\t\tor use STUB for fine-grained control", serviceCallerLocation(3))
+}
+
+func serviceMatchArgument[T any](m serviceMockMethod, index int, name string, got T, match func(T) bool, wants map[string]any, methods map[string]string, hints map[string]string, tb testing.TB, expectAt string) {
+	if match == nil || match(got) {
 		return
 	}
+	tb.Helper()
+
+	method := "func(got) bool"
+	if v, ok := methods[name]; ok {
+		method = v
+	}
+
+	hint := fmt.Sprintf("hint: for custom matching use .Match[arg](func(...) bool) at %s\n\tor use STUB for fine-grained control", expectAt)
+	if v, ok := hints[name]; ok {
+		hint = v
+	}
+
+	sb := &strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s.%s call #%d argument \"%s\" did not match\n", m.interfaceName(), m.methodName(), index+1, name))
+	if want, ok := wants[name]; ok {
+		sb.WriteString(fmt.Sprintf("  want: %#v\n", want))
+	}
+	sb.WriteString(fmt.Sprintf("   got: %#v\n", got))
+	sb.WriteString(fmt.Sprintf("method: %s\n", method))
+	sb.WriteString("\n")
+	m.buildCallHistory(sb, "call history")
+	sb.WriteString(hint)
 
 	tb.Helper()
-	m.fatal(index, serviceMessageArgumentMismatched(m, argName, expectAt, "==", index+1, want, got))
+	m.fatal(index, sb.String())
+}
+
+func serviceReflectEqualMatcher[T any](want T) func(T) bool {
+	return func(got T) bool {
+		return reflect.DeepEqual(want, got)
+	}
+}
+
+func serviceBasicComparisonMatcher[T comparable](want T) func(T) bool {
+	return func(got T) bool {
+		return want == got
+	}
 }

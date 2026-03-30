@@ -30,7 +30,7 @@ func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 		case mock.stub != nil:
 			return mock.invokeStub(ctx, input)
 
-		case len(mock.expects) > 0:
+		case len(mock.expects) > 0: // skip:!expect
 			index := len(mock.Calls)
 			if index < len(mock.expects) {
 				mock.expects[index].tb.Helper()
@@ -73,7 +73,7 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 		spy.panic(libMessageDuplicateStub(spy, spy.stubLocation))
 	}
 
-	if len(spy.expects) > 0 {
+	if len(spy.expects) > 0 { // skip:!expect
 		spy.panic(libMessageStubAfterExpect(spy, spy.expects[0].location))
 	}
 
@@ -81,15 +81,15 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 	return spy
 }
 
-type targetExpecter struct {
+type targetExpecter struct { // skip:!expect
 	target *target
 }
 
-func (m *target) EXPECT() *targetExpecter {
+func (m *target) EXPECT() *targetExpecter { // skip:!expect
 	return &targetExpecter{target: m}
 }
 
-func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
+func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter { // skip:!expect
 	if e.target.td == nil {
 		e.target.td = &targetTestDouble{}
 	}
@@ -110,9 +110,14 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter {
 
 	index := len(mock.expects)
 	mock.expects = append(mock.expects, &targetFullExpect{
-		location: libCallerLocation(2),
-		index:    index,
-		tb:       tb,
+		location:         libCallerLocation(2),
+		matcher:          &targetFullArgumentMatcher{},
+		matcherWants:     make(map[string]any),
+		matcherMethods:   make(map[string]string),
+		matcherHints:     make(map[string]string),
+		matcherLocations: make(map[string]string),
+		index:            index,
+		tb:               tb,
 	})
 
 	tb.Helper()
@@ -125,8 +130,8 @@ type targetFull struct {
 	Calls        []targetFullCall
 	stub         func(ctx context.Context, input string) ([]Result, error)
 	stubLocation string
-	expects      []*targetFullExpect
-	verified     bool
+	expects      []*targetFullExpect // skip:!expect
+	verified     bool                // skip:!expect
 }
 
 func (m *targetFull) methodName() string {
@@ -138,22 +143,22 @@ func (m *targetFull) interfaceName() string {
 }
 
 func (m *targetFull) fatal(index int, msg string) {
-	m.verified = true
-	m.expects[index].tb.Helper()
-	m.expects[index].tb.Fatal(msg)
+	m.verified = true              // skip:!expect
+	m.expects[index].tb.Helper()   // skip:!expect
+	m.expects[index].tb.Fatal(msg) // skip:!expect
 }
 
 func (m *targetFull) panic(msg string) {
-	m.verified = true
+	m.verified = true // skip:!expect
 	panic(msg)
 }
 
 func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
-	if header != "" && len(m.Calls) != 0 {
+	if header != "" && len(m.Calls) != 0 { // skip:!expect
 		sb.WriteString(fmt.Sprintf("%s:\n", header))
 	}
 
-	for i, call := range m.Calls {
+	for i, call := range m.Calls { // skip:!expect
 		args := []any{"ctx", call.Arguments.ctx, "input", call.Arguments.input}
 		libMessageCallHistory(sb, i, m.expects[i].location, call.Location, args)
 	}
@@ -167,7 +172,7 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 	)
 }
 
-func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) {
+func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) { // skip:!expect
 	args := []any{"ctx", ctx, "input", input}
 	index := len(m.Calls)
 	if index >= len(m.expects) {
@@ -175,16 +180,14 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	}
 
 	expect := m.expects[index]
-	if expect.matcher != nil && !expect.matcher(ctx, input) {
+	if expect.match != nil && !expect.match(ctx, input) {
 		expect.tb.Helper()
-		m.fatal(index, libMessageMatchFail(m, expect.location, index, args))
+		m.fatal(index, libMessageMatchFail(m, expect.matchLocation, index, args))
 	}
 
-	if expect.arguments != nil {
-		expect.tb.Helper()
-		libCompareByReflectEqual(m, "ctx", expect.arguments.ctx, ctx, expect.tb, expect.location, index)
-		libCompareByBasicComparison(m, "input", expect.arguments.input, input, expect.tb, expect.location, index)
-	}
+	expect.tb.Helper()
+	libMatchArgument(m, index, "ctx", ctx, expect.matcher.ctx, expect.matcherWants, expect.matcherMethods, expect.matcherHints, expect.tb, expect.matcherLocations["ctx"])
+	libMatchArgument(m, index, "input", input, expect.matcher.input, expect.matcherWants, expect.matcherMethods, expect.matcherHints, expect.tb, expect.matcherLocations["input"])
 
 	return m.capture(
 		targetFullArgument{ctx: ctx, input: input},
@@ -201,7 +204,7 @@ func (m *targetFull) capture(args targetFullArgument, returns targetFullReturn) 
 	return returns.first, returns.second
 }
 
-func (m *targetFull) verify(index int) {
+func (m *targetFull) verify(index int) { // skip:!expect
 	if !m.verified && index >= len(m.Calls) {
 		m.expects[index].tb.Helper()
 		m.expects[index].tb.Fatal(libMessageExpectButNotCalled(m, len(m.expects), len(m.Calls), index))
@@ -219,58 +222,194 @@ type targetFullArgument struct {
 	input string
 }
 
+type targetFullArgumentMatcher struct { // skip:!expect
+	ctx   func(context.Context) bool
+	input func(string) bool
+}
+
 type targetFullReturn struct {
 	first  []Result
 	second error
 }
 
-type targetFullExpect struct {
-	matcher   func(ctx context.Context, input string) bool
-	arguments *targetFullArgument
-	returns   targetFullReturn
-	location  string
-	index     int
-	tb        testing.TB
+type targetFullExpect struct { // skip:!expect
+	match            func(ctx context.Context, input string) bool
+	matchLocation    string
+	matcher          *targetFullArgumentMatcher
+	matcherWants     map[string]any
+	matcherMethods   map[string]string
+	matcherHints     map[string]string
+	matcherLocations map[string]string
+	returns          targetFullReturn
+	location         string
+	index            int
+	tb               testing.TB
 }
 
-type targetFullExpecter struct {
+type targetFullExpecter struct { // skip:!expect
 	target *targetFull
 	expect *targetFullExpect
 }
 
-func (e *targetFullExpecter) Return(first []Result, second error) {
+func (e *targetFullExpecter) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
-func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch {
+func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
 		e.target.fatal(e.expect.index, libMessageMatchByNil(e.target))
 	}
 
-	e.expect.matcher = matcher
-	e.expect.location = libCallerLocation(2)
+	e.expect.match = matcher
+	e.expect.matchLocation = libCallerLocation(2)
 	return &targetFullExpecterWithMatch{expect: e.expect}
 }
 
-func (e *targetFullExpecter) CalledWith(ctx context.Context, input string) *targetFullExpecterWithArgs {
-	e.expect.arguments = &targetFullArgument{ctx: ctx, input: input}
+func (e *targetFullExpecter) MatchCtx(matcher func(ctx context.Context) bool) *targetFullExpecterWithMatchArg { // skip:!expect
+	if matcher == nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchCtx"))
+	}
 
-	return &targetFullExpecterWithArgs{expect: e.expect}
+	e.expect.matcher.ctx = matcher
+	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
+	e.expect.matcherHints["ctx"] = libMessageMatchArgHint()
+	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
 }
 
-type targetFullExpecterWithArgs struct {
+func (e *targetFullExpecter) MatchInput(matcher func(input string) bool) *targetFullExpecterWithMatchArg { // skip:!expect
+	if matcher == nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchInput"))
+	}
+
+	e.expect.matcher.input = matcher
+	e.expect.matcherLocations["input"] = libCallerLocation(2)
+	e.expect.matcherHints["input"] = libMessageMatchArgHint()
+	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
+}
+
+func (e *targetFullExpecter) With(ctx context.Context, input string) *targetFullExpecterWithValue { // skip:!expect
+	e.WithCtx(ctx)
+	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
+
+	e.WithInput(input)
+	e.expect.matcherLocations["input"] = libCallerLocation(2)
+
+	return &targetFullExpecterWithValue{expect: e.expect}
+}
+
+func (e *targetFullExpecter) WithCtx(ctx context.Context) *targetFullExpecterWithValueArg { // skip:!expect
+	e.expect.matcher.ctx = libReflectEqualMatcher(ctx)
+	e.expect.matcherWants["ctx"] = ctx
+	e.expect.matcherMethods["ctx"] = "reflect.DeepEqual"
+	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
+
+	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
+}
+
+func (e *targetFullExpecter) WithInput(input string) *targetFullExpecterWithValueArg { // skip:!expect
+	e.expect.matcher.input = libBasicComparisonMatcher(input)
+	e.expect.matcherWants["input"] = input
+	e.expect.matcherMethods["input"] = "=="
+	e.expect.matcherLocations["input"] = libCallerLocation(2)
+
+	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
+}
+
+type targetFullExpecterWithValue struct { // skip:!expect
 	expect *targetFullExpect
 }
 
-func (e *targetFullExpecterWithArgs) Return(first []Result, second error) {
+func (e *targetFullExpecterWithValue) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
-type targetFullExpecterWithMatch struct {
+type targetFullExpecterWithMatch struct { // skip:!expect
 	expect *targetFullExpect
 }
 
-func (e *targetFullExpecterWithMatch) Return(first []Result, second error) {
+func (e *targetFullExpecterWithMatch) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
+}
+
+type targetFullExpecterWithMatchArg struct { // skip:!expect
+	expect *targetFullExpect
+	target *targetFull
+}
+
+func (e *targetFullExpecterWithMatchArg) Return(first []Result, second error) { // skip:!expect
+	e.expect.returns = targetFullReturn{first: first, second: second}
+}
+
+func (e *targetFullExpecterWithMatchArg) MatchCtx(matcher func(ctx context.Context) bool) *targetFullExpecterWithMatchArg { // skip:!expect
+	if matcher == nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchCtx"))
+	}
+
+	if e.expect.matcher.ctx != nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageDuplicateMatchArg(e.target, "MatchCtx", e.expect.matcherLocations["ctx"]))
+	}
+
+	e.expect.matcher.ctx = matcher
+	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
+	e.expect.matcherHints["ctx"] = libMessageMatchArgHint()
+	return e
+}
+
+func (e *targetFullExpecterWithMatchArg) MatchInput(matcher func(input string) bool) *targetFullExpecterWithMatchArg { // skip:!expect
+	if matcher == nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchInput"))
+	}
+
+	if e.expect.matcher.input != nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageDuplicateMatchArg(e.target, "MatchInput", e.expect.matcherLocations["input"]))
+	}
+
+	e.expect.matcher.input = matcher
+	e.expect.matcherLocations["input"] = libCallerLocation(2)
+	e.expect.matcherHints["input"] = libMessageMatchArgHint()
+	return e
+}
+
+type targetFullExpecterWithValueArg struct { // skip:!expect
+	expect *targetFullExpect
+	target *targetFull
+}
+
+func (e *targetFullExpecterWithValueArg) Return(first []Result, second error) { // skip:!expect
+	e.expect.returns = targetFullReturn{first: first, second: second}
+}
+
+func (e *targetFullExpecterWithValueArg) WithCtx(ctx context.Context) *targetFullExpecterWithValueArg { // skip:!expect
+	if e.expect.matcher.ctx != nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageDuplicateMatchArg(e.target, "WithCtx", e.expect.matcherLocations["ctx"]))
+	}
+
+	e.expect.matcher.ctx = libReflectEqualMatcher(ctx)
+	e.expect.matcherWants["ctx"] = ctx
+	e.expect.matcherMethods["ctx"] = "reflect.DeepEqual"
+	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
+
+	return e
+}
+
+func (e *targetFullExpecterWithValueArg) WithInput(input string) *targetFullExpecterWithValueArg { // skip:!expect
+	if e.expect.matcher.input != nil {
+		e.expect.tb.Helper()
+		e.target.fatal(e.expect.index, libMessageDuplicateMatchArg(e.target, "WithInput", e.expect.matcherLocations["input"]))
+	}
+
+	e.expect.matcher.input = libBasicComparisonMatcher(input)
+	e.expect.matcherWants["input"] = input
+	e.expect.matcherMethods["input"] = "=="
+	e.expect.matcherLocations["input"] = libCallerLocation(2)
+
+	return e
 }

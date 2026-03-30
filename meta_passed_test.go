@@ -16,6 +16,9 @@ func Test_Meta_Passed(t *testing.T) {
 		{name: "Test_STUB_Call_Has_Location"},
 		{name: "Test_EXPECT_Via_Struct"},
 		{name: "Test_EXPECT_Via_Ctor"},
+		{name: "Test_EXPECT_Partial_Arg"},
+		{name: "Test_EXPECT_Return"},
+		{name: "Test_SubTests"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

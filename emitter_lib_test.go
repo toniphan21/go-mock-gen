@@ -63,18 +63,6 @@ func Test_LibraryData(t *testing.T) {
 		},
 
 		{
-			file: "lib.MessageArgumentMismatchedCode.go",
-			data: LibraryData{
-				MethodInterface:               "repositoryMockMethod",
-				CallerLocationFunc:            "repositoryCallerLocation",
-				MessageArgumentMismatchedFunc: "repositoryMessageArgumentMismatched",
-			},
-			fn: func(data LibraryData) jen.Code {
-				return data.MessageArgumentMismatchedCode()
-			},
-		},
-
-		{
 			file: "lib.MessageNotImplementedCode.go",
 			data: LibraryData{
 				CallerLocationFunc:        "repositoryCallerLocation",
@@ -192,26 +180,66 @@ func Test_LibraryData(t *testing.T) {
 		},
 
 		{
-			file: "lib.CompareByReflectEqualCode.go",
+			file: "lib.MessageMatchArgByNilCode.go",
 			data: LibraryData{
-				MethodInterface:               "repositoryMockMethod",
-				MessageArgumentMismatchedFunc: "repositoryMessageArgumentMismatched",
-				CompareByReflectEqualFunc:     "repositoryCompareByReflectEqual",
+				MethodInterface:          "repositoryMockMethod",
+				MessageMatchArgByNilFunc: "repositoryMessageMatchArgByNil",
 			},
 			fn: func(data LibraryData) jen.Code {
-				return data.CompareByReflectEqualCode()
+				return data.MessageMatchArgByNilCode()
 			},
 		},
 
 		{
-			file: "lib.CompareByBasicComparisonCode.go",
+			file: "lib.MessageDuplicateMatchArgCode.go",
 			data: LibraryData{
-				MethodInterface:               "repositoryMockMethod",
-				MessageArgumentMismatchedFunc: "repositoryMessageArgumentMismatched",
-				CompareByBasicComparisonFunc:  "repositoryCompareByBasicComparison",
+				MethodInterface:              "repositoryMockMethod",
+				MessageDuplicateMatchArgFunc: "repositoryMessageDuplicateMatchArg",
 			},
 			fn: func(data LibraryData) jen.Code {
-				return data.CompareByBasicComparisonCode()
+				return data.MessageDuplicateMatchArgCode()
+			},
+		},
+
+		{
+			file: "lib.MessageMatchArgHintCode.go",
+			data: LibraryData{
+				CallerLocationFunc:      "repositoryCallerLocation",
+				MessageMatchArgHintFunc: "repositoryMessageMatchArgHint",
+			},
+			fn: func(data LibraryData) jen.Code {
+				return data.MessageMatchArgHintCode()
+			},
+		},
+
+		{
+			file: "lib.MatchArgumentCode.go",
+			data: LibraryData{
+				MethodInterface:   "repositoryMockMethod",
+				MatchArgumentFunc: "repositoryMatchArgument",
+			},
+			fn: func(data LibraryData) jen.Code {
+				return data.MatchArgumentCode()
+			},
+		},
+
+		{
+			file: "lib.ReflectEqualMatcherCode.go",
+			data: LibraryData{
+				ReflectEqualMatcherFunc: "repositoryReflectEqualMatcher",
+			},
+			fn: func(data LibraryData) jen.Code {
+				return data.ReflectEqualMatcherCode()
+			},
+		},
+
+		{
+			file: "lib.BasicComparisonMatcherCode.go",
+			data: LibraryData{
+				BasicComparisonMatcherFunc: "repositoryBasicComparisonMatcher",
+			},
+			fn: func(data LibraryData) jen.Code {
+				return data.BasicComparisonMatcherCode()
 			},
 		},
 
@@ -222,7 +250,6 @@ func Test_LibraryData(t *testing.T) {
 				MethodInterface:               "serviceMockMethod",
 				MessageWriteArgumentsFunc:     "serviceMessageWriteArguments",
 				MessageMatchFailFunc:          "serviceMessageMatchFail",
-				MessageArgumentMismatchedFunc: "serviceMessageArgumentMismatched",
 				MessageNotImplementedFunc:     "serviceMessageNotImplemented",
 				MessageCallHistoryFunc:        "serviceMessageCallHistory",
 				MessageTooManyCallsFunc:       "serviceMessageTooManyCalls",
@@ -233,8 +260,12 @@ func Test_LibraryData(t *testing.T) {
 				MessageStubAfterExpectFunc:    "serviceMessageStubAfterExpect",
 				MessageDuplicateStubFunc:      "serviceMessageDuplicateStub",
 				MessageExpectButNotCalledFunc: "serviceMessageExpectButNotCalled",
-				CompareByReflectEqualFunc:     "serviceCompareByReflectEqual",
-				CompareByBasicComparisonFunc:  "serviceCompareByBasicComparison",
+				MessageMatchArgByNilFunc:      "serviceMessageMatchArgByNil",
+				MessageDuplicateMatchArgFunc:  "serviceMessageDuplicateMatchArg",
+				MessageMatchArgHintFunc:       "serviceMessageMatchArgHint",
+				MatchArgumentFunc:             "serviceMatchArgument",
+				ReflectEqualMatcherFunc:       "serviceReflectEqualMatcher",
+				BasicComparisonMatcherFunc:    "serviceBasicComparisonMatcher",
 			},
 			fn: func(data LibraryData) jen.Code {
 				return jen.Add(data.GenerateCode()...)

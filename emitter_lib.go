@@ -7,7 +7,6 @@ type LibraryData struct {
 	MethodInterface               string
 	MessageWriteArgumentsFunc     string
 	MessageMatchFailFunc          string
-	MessageArgumentMismatchedFunc string
 	MessageNotImplementedFunc     string
 	MessageCallHistoryFunc        string
 	MessageTooManyCallsFunc       string
@@ -18,8 +17,12 @@ type LibraryData struct {
 	MessageStubAfterExpectFunc    string
 	MessageDuplicateStubFunc      string
 	MessageExpectButNotCalledFunc string
-	CompareByReflectEqualFunc     string
-	CompareByBasicComparisonFunc  string
+	MessageMatchArgByNilFunc      string
+	MessageDuplicateMatchArgFunc  string
+	MessageMatchArgHintFunc       string
+	MatchArgumentFunc             string
+	ReflectEqualMatcherFunc       string
+	BasicComparisonMatcherFunc    string
 }
 
 func (lib *LibraryData) CallerLocationCode() jen.Code {
@@ -153,59 +156,6 @@ func (lib *LibraryData) MessageMatchFailCode() jen.Code {
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("hint: check the callback passed to Match at %s"),
 				jen.Id("matchedAt"),
-			),
-		),
-		jen.Return(jen.Id("sb").Dot("String").Call()),
-	)
-}
-
-func (lib *LibraryData) MessageArgumentMismatchedCode() jen.Code {
-	return jen.Func().Id(lib.MessageArgumentMismatchedFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
-		jen.Id("argName").String(),
-		jen.Id("expectAt").String(),
-		jen.Id("comparedBy").String(),
-		jen.Id("callNo").Int(),
-		jen.Id("want").Any(),
-		jen.Id("got").Any(),
-	).String().Block(
-		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
-		jen.Id("sb").Dot("WriteString").Call(
-			jen.Qual("fmt", "Sprintf").Call(
-				jen.Lit("%s.%s call #%d argument \"%s\" did not match\n"),
-				jen.Id("m").Dot("interfaceName").Call(),
-				jen.Id("m").Dot("methodName").Call(),
-				jen.Id("callNo"),
-				jen.Id("argName"),
-			),
-		),
-		jen.Id("sb").Dot("WriteString").Call(
-			jen.Qual("fmt", "Sprintf").Call(
-				jen.Lit("  want: %#v\n"),
-				jen.Id("want"),
-			),
-		),
-		jen.Id("sb").Dot("WriteString").Call(
-			jen.Qual("fmt", "Sprintf").Call(
-				jen.Lit("   got: %#v\n"),
-				jen.Id("got"),
-			),
-		),
-		jen.Id("sb").Dot("WriteString").Call(
-			jen.Qual("fmt", "Sprintf").Call(
-				jen.Lit("method: %s\n"),
-				jen.Id("comparedBy"),
-			),
-		),
-		jen.Id("sb").Dot("WriteString").Call(jen.Lit("\n")),
-		jen.Id("m").Dot("buildCallHistory").Call(
-			jen.Id("sb"),
-			jen.Lit("call history"),
-		),
-		jen.Id("sb").Dot("WriteString").Call(
-			jen.Qual("fmt", "Sprintf").Call(
-				jen.Lit("hint: for custom matching use .Match(func(...) bool) at %s\n\tor use STUB for fine-grained control"),
-				jen.Id("expectAt"),
 			),
 		),
 		jen.Return(jen.Id("sb").Dot("String").Call()),
@@ -582,71 +532,186 @@ func (lib *LibraryData) MessageExpectButNotCalledCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) CompareByReflectEqualCode() jen.Code {
-	return jen.Func().Id(lib.CompareByReflectEqualFunc).Types(
-		jen.Id("M").Id(lib.MethodInterface),
-		jen.Id("T").Any(),
-	).Params(
-		jen.Id("m").Id("M"),
-		jen.Id("argName").String(),
-		jen.Id("want").Id("T"),
-		jen.Id("got").Id("T"),
-		jen.Id("tb").Qual("testing", "TB"),
-		jen.Id("expectAt").String(),
-		jen.Id("index").Int(),
-	).Block(
-		jen.If(
-			jen.Qual("reflect", "DeepEqual").Call(jen.Id("want"), jen.Id("got")),
-		).Block(
-			jen.Return(),
+func (lib *LibraryData) MessageMatchArgByNilCode() jen.Code {
+	return jen.Func().Id(lib.MessageMatchArgByNilFunc).Params(
+		jen.Id("m").Id(lib.MethodInterface),
+		jen.Id("method").String(),
+	).String().Block(
+		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("%s.%s %s received a nil function\n"),
+				jen.Id("m").Dot("interfaceName").Call(),
+				jen.Id("m").Dot("methodName").Call(),
+				jen.Id("method"),
+			),
 		),
-		jen.Line(),
-		jen.Id("tb").Dot("Helper").Call(),
-		jen.Id("m").Dot("fatal").Call(
-			jen.Id("index"),
-			jen.Id(lib.MessageArgumentMismatchedFunc).Call(
-				jen.Id("m"),
-				jen.Id("argName"),
-				jen.Id("expectAt"),
-				jen.Lit("reflect.DeepEqual"),
-				jen.Id("index").Op("+").Lit(1),
-				jen.Id("want"),
-				jen.Id("got"),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Lit("\thint: provide a valid function"),
+		),
+		jen.Return(jen.Id("sb").Dot("String").Call()),
+	)
+}
+
+func (lib *LibraryData) MessageDuplicateMatchArgCode() jen.Code {
+	return jen.Func().Id(lib.MessageDuplicateMatchArgFunc).Params(
+		jen.Id("m").Id(lib.MethodInterface),
+		jen.Id("method").String(),
+		jen.Id("firstUsedAt").String(),
+	).String().Block(
+		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("duplicate %s for %s.%s\n"),
+				jen.Id("method"),
+				jen.Id("m").Dot("interfaceName").Call(),
+				jen.Id("m").Dot("methodName").Call(),
+			),
+		),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("\t%14s: %s\n\n"),
+				jen.Lit("first used at"),
+				jen.Id("firstUsedAt"),
+			),
+		),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Lit("\thint: each argument can only be matched once, remove one of the above"),
+		),
+		jen.Return(jen.Id("sb").Dot("String").Call()),
+	)
+}
+
+func (lib *LibraryData) MessageMatchArgHintCode() jen.Code {
+	return jen.Func().Id(lib.MessageMatchArgHintFunc).Params().String().Block(
+		jen.Return(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("\thint: check argument matching at %s\n\t\t"+"or use STUB for fine-grained control"),
+				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 	)
 }
 
-func (lib *LibraryData) CompareByBasicComparisonCode() jen.Code {
-	return jen.Func().Id(lib.CompareByBasicComparisonFunc).Types(
-		jen.Id("M").Id(lib.MethodInterface),
-		jen.Id("T").Comparable(),
+func (lib *LibraryData) MatchArgumentCode() jen.Code {
+	return jen.Func().Id(lib.MatchArgumentFunc).Types(
+		jen.Id("T").Any(),
 	).Params(
-		jen.Id("m").Id("M"),
-		jen.Id("argName").String(),
-		jen.Id("want").Id("T"),
+		jen.Id("m").Id(lib.MethodInterface),
+		jen.Id("index").Int(),
+		jen.Id("name").String(),
 		jen.Id("got").Id("T"),
+		jen.Id("match").Func().Params(jen.Id("T")).Bool(),
+		jen.Id("wants").Map(jen.String()).Any(),
+		jen.Id("methods").Map(jen.String()).String(),
+		jen.Id("hints").Map(jen.String()).String(),
 		jen.Id("tb").Qual("testing", "TB"),
 		jen.Id("expectAt").String(),
-		jen.Id("index").Int(),
 	).Block(
 		jen.If(
-			jen.Id("want").Op("==").Id("got"),
+			jen.Id("match").Op("==").Nil().Op("||").Id("match").Call(jen.Id("got")),
 		).Block(
 			jen.Return(),
 		),
+		jen.Id("tb").Dot("Helper").Call(),
+		jen.Line(),
+		jen.Id("method").Op(":=").Lit("func(got) bool"),
+		jen.If(
+			jen.List(jen.Id("v"), jen.Id("ok")).Op(":=").Id("methods").Index(jen.Id("name")),
+			jen.Id("ok"),
+		).Block(
+			jen.Id("method").Op("=").Id("v"),
+		),
+		jen.Line(),
+		jen.Id("hint").Op(":=").Qual("fmt", "Sprintf").Call(
+			jen.Lit("hint: for custom matching use .Match[arg](func(...) bool) at %s\n\tor use STUB for fine-grained control"),
+			jen.Id("expectAt"),
+		),
+		jen.If(
+			jen.List(jen.Id("v"), jen.Id("ok")).Op(":=").Id("hints").Index(jen.Id("name")),
+			jen.Id("ok"),
+		).Block(
+			jen.Id("hint").Op("=").Id("v"),
+		),
+		jen.Line(),
+		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("%s.%s call #%d argument \"%s\" did not match\n"),
+				jen.Id("m").Dot("interfaceName").Call(),
+				jen.Id("m").Dot("methodName").Call(),
+				jen.Id("index").Op("+").Lit(1),
+				jen.Id("name"),
+			),
+		),
+		jen.If(
+			jen.List(jen.Id("want"), jen.Id("ok")).Op(":=").Id("wants").Index(jen.Id("name")),
+			jen.Id("ok"),
+		).Block(
+			jen.Id("sb").Dot("WriteString").Call(
+				jen.Qual("fmt", "Sprintf").Call(
+					jen.Lit("  want: %#v\n"),
+					jen.Id("want"),
+				),
+			),
+		),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("   got: %#v\n"),
+				jen.Id("got"),
+			),
+		),
+		jen.Id("sb").Dot("WriteString").Call(
+			jen.Qual("fmt", "Sprintf").Call(
+				jen.Lit("method: %s\n"),
+				jen.Id("method"),
+			),
+		),
+		jen.Id("sb").Dot("WriteString").Call(jen.Lit("\n")),
+		jen.Id("m").Dot("buildCallHistory").Call(
+			jen.Id("sb"),
+			jen.Lit("call history"),
+		),
+		jen.Id("sb").Dot("WriteString").Call(jen.Id("hint")),
 		jen.Line(),
 		jen.Id("tb").Dot("Helper").Call(),
 		jen.Id("m").Dot("fatal").Call(
 			jen.Id("index"),
-			jen.Id(lib.MessageArgumentMismatchedFunc).Call(
-				jen.Id("m"),
-				jen.Id("argName"),
-				jen.Id("expectAt"),
-				jen.Lit("=="),
-				jen.Id("index").Op("+").Lit(1),
-				jen.Id("want"),
-				jen.Id("got"),
+			jen.Id("sb").Dot("String").Call(),
+		),
+	)
+}
+
+func (lib *LibraryData) ReflectEqualMatcherCode() jen.Code {
+	return jen.Func().Id(lib.ReflectEqualMatcherFunc).Types(
+		jen.Id("T").Any(),
+	).Params(
+		jen.Id("want").Id("T"),
+	).Func().Params(jen.Id("T")).Bool().Block(
+		jen.Return(
+			jen.Func().Params(jen.Id("got").Id("T")).Bool().Block(
+				jen.Return(
+					jen.Qual("reflect", "DeepEqual").Call(
+						jen.Id("want"),
+						jen.Id("got"),
+					),
+				),
+			),
+		),
+	)
+}
+
+func (lib *LibraryData) BasicComparisonMatcherCode() jen.Code {
+	return jen.Func().Id(lib.BasicComparisonMatcherFunc).Types(
+		jen.Id("T").Comparable(),
+	).Params(
+		jen.Id("want").Id("T"),
+	).Func().Params(jen.Id("T")).Bool().Block(
+		jen.Return(
+			jen.Func().Params(jen.Id("got").Id("T")).Bool().Block(
+				jen.Return(
+					jen.Id("want").Op("==").Id("got"),
+				),
 			),
 		),
 	)
@@ -658,7 +723,6 @@ func (lib *LibraryData) GenerateCode() []jen.Code {
 		lib.MethodInterfaceCode(), jen.Line(), jen.Line(),
 		lib.MessageWriteArgumentsCode(), jen.Line(), jen.Line(),
 		lib.MessageMatchFailCode(), jen.Line(), jen.Line(),
-		lib.MessageArgumentMismatchedCode(), jen.Line(), jen.Line(),
 		lib.MessageNotImplementedCode(), jen.Line(), jen.Line(),
 		lib.MessageCallHistoryCode(), jen.Line(), jen.Line(),
 		lib.MessageTooManyCallsCode(), jen.Line(), jen.Line(),
@@ -669,7 +733,11 @@ func (lib *LibraryData) GenerateCode() []jen.Code {
 		lib.MessageStubAfterExpectCode(), jen.Line(), jen.Line(),
 		lib.MessageDuplicateStubCode(), jen.Line(), jen.Line(),
 		lib.MessageExpectButNotCalledCode(), jen.Line(), jen.Line(),
-		lib.CompareByReflectEqualCode(), jen.Line(), jen.Line(),
-		lib.CompareByBasicComparisonCode(), jen.Line(), jen.Line(),
+		lib.MessageMatchArgByNilCode(), jen.Line(), jen.Line(),
+		lib.MessageDuplicateMatchArgCode(), jen.Line(), jen.Line(),
+		lib.MessageMatchArgHintCode(), jen.Line(), jen.Line(),
+		lib.MatchArgumentCode(), jen.Line(), jen.Line(),
+		lib.ReflectEqualMatcherCode(), jen.Line(), jen.Line(),
+		lib.BasicComparisonMatcherCode(), jen.Line(), jen.Line(),
 	}
 }

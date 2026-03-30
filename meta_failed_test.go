@@ -23,7 +23,6 @@ func Test_GenerateCode_As_Regression_Test(t *testing.T) {
 		MethodInterface:               "libMockMethod",
 		MessageWriteArgumentsFunc:     "libMessageWriteArguments",
 		MessageMatchFailFunc:          "libMessageMatchFail",
-		MessageArgumentMismatchedFunc: "libMessageArgumentMismatched",
 		MessageNotImplementedFunc:     "libMessageNotImplemented",
 		MessageCallHistoryFunc:        "libMessageCallHistory",
 		MessageTooManyCallsFunc:       "libMessageTooManyCalls",
@@ -34,8 +33,12 @@ func Test_GenerateCode_As_Regression_Test(t *testing.T) {
 		MessageStubAfterExpectFunc:    "libMessageStubAfterExpect",
 		MessageDuplicateStubFunc:      "libMessageDuplicateStub",
 		MessageExpectButNotCalledFunc: "libMessageExpectButNotCalled",
-		CompareByReflectEqualFunc:     "libCompareByReflectEqual",
-		CompareByBasicComparisonFunc:  "libCompareByBasicComparison",
+		MessageMatchArgByNilFunc:      "libMessageMatchArgByNil",
+		MessageDuplicateMatchArgFunc:  "libMessageDuplicateMatchArg",
+		MessageMatchArgHintFunc:       "libMessageMatchArgHint",
+		MatchArgumentFunc:             "libMatchArgument",
+		ReflectEqualMatcherFunc:       "libReflectEqualMatcher",
+		BasicComparisonMatcherFunc:    "libBasicComparisonMatcher",
 	}
 
 	_, filename, _, _ := runtime.Caller(0)
@@ -546,7 +549,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
            got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
         method: reflect.DeepEqual
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:12
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:12
         	or use STUB for fine-grained control
 `,
 		},
@@ -558,7 +561,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
            got: "1"
         method: ==
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:21
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:21
         	or use STUB for fine-grained control
 `,
 		},
@@ -577,7 +580,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
         		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         		input = "1"
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:31
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:31
         	or use STUB for fine-grained control
 `,
 		},
@@ -596,7 +599,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
         		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         		input = "1"
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:42
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:42
         	or use STUB for fine-grained control
 `,
 		},
@@ -608,7 +611,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
            got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
         method: reflect.DeepEqual
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:53
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:53
         	or use STUB for fine-grained control
 `,
 		},
@@ -620,7 +623,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
            got: "1"
         method: ==
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:63
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:63
         	or use STUB for fine-grained control
 `,
 		},
@@ -639,7 +642,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
         		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         		input = "1"
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:74
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:74
         	or use STUB for fine-grained control
 `,
 		},
@@ -658,7 +661,7 @@ func Test_MockFailureOutput_CalledWith(t *testing.T) {
         		  ctx = context.backgroundCtx{emptyCtx:context.emptyCtx{}}
         		input = "1"
         
-        hint: for custom matching use .Match(func(...) bool) at failed_called_with_test.go:86
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_called_with_test.go:86
         	or use STUB for fine-grained control
 `,
 		},
@@ -682,6 +685,182 @@ func Test_MockFailureOutput_Stub(t *testing.T) {
 		{
 			name: "Test_Stub_Fail_Too_Many_Calls",
 			expected: `    failed_stub_test.go:31: want 1, got 2
+`,
+		},
+		// ---
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.Run(t)
+		})
+	}
+}
+
+func Test_Arg_Matcher(t *testing.T) {
+	cases := []metaFailedOutputTestCase{
+		{
+			name: "Test_Arg_Matcher_Pass_Nil_In_First_Place_FirstArg",
+			expected: `    failed_arg_matcher_test.go:11: Target.Full MatchCtx received a nil function
+        	hint: provide a valid function
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Pass_Nil_In_Second_Place_FirstArg",
+			expected: `    failed_arg_matcher_test.go:19: Target.Full MatchCtx received a nil function
+        	hint: provide a valid function
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Pass_Nil_In_First_Place_SecondArg",
+			expected: `    failed_arg_matcher_test.go:25: Target.Full MatchInput received a nil function
+        	hint: provide a valid function
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Pass_Nil_In_Second_Place_SecondArg",
+			expected: `    failed_arg_matcher_test.go:33: Target.Full MatchInput received a nil function
+        	hint: provide a valid function
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Duplicate_FirstArg",
+			expected: `    failed_arg_matcher_test.go:41: duplicate MatchCtx for Target.Full
+        	 first used at: failed_arg_matcher_test.go:40
+        
+        	hint: each argument can only be matched once, remove one of the above
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Duplicate_SecondArg",
+			expected: `    failed_arg_matcher_test.go:52: duplicate MatchInput for Target.Full
+        	 first used at: failed_arg_matcher_test.go:51
+        
+        	hint: each argument can only be matched once, remove one of the above
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Failed_FirstPlace_FirstArg",
+			expected: `    failed_arg_matcher_test.go:63: Target.Full call #1 argument "ctx" did not match
+           got: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        method: func(got) bool
+        
+        	hint: check argument matching at failed_arg_matcher_test.go:61
+        		or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Failed_SecondPlace_FirstArg",
+			expected: `    failed_arg_matcher_test.go:73: Target.Full call #1 argument "ctx" did not match
+           got: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+        method: func(got) bool
+        
+        	hint: check argument matching at failed_arg_matcher_test.go:71
+        		or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Failed_FirstPlace_SecondArg",
+			expected: `    failed_arg_matcher_test.go:82: Target.Full call #1 argument "input" did not match
+           got: "anything"
+        method: func(got) bool
+        
+        	hint: check argument matching at failed_arg_matcher_test.go:80
+        		or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Matcher_Failed_SecondPlace_SecondArg",
+			expected: `    failed_arg_matcher_test.go:92: Target.Full call #1 argument "input" did not match
+           got: "anything"
+        method: func(got) bool
+        
+        	hint: check argument matching at failed_arg_matcher_test.go:90
+        		or use STUB for fine-grained control
+`,
+		},
+		// ---
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.Run(t)
+		})
+	}
+}
+
+func Test_Arg_Value(t *testing.T) {
+	cases := []metaFailedOutputTestCase{
+		{
+			name: "Test_Arg_Value_Duplicate_FirstArg",
+			expected: `    failed_arg_value_test.go:13: duplicate WithCtx for Target.Full
+        	 first used at: failed_arg_value_test.go:12
+        
+        	hint: each argument can only be matched once, remove one of the above
+`,
+		},
+
+		{
+			name: "Test_Arg_Value_Duplicate_SecondArg",
+			expected: `    failed_arg_value_test.go:24: duplicate WithInput for Target.Full
+        	 first used at: failed_arg_value_test.go:23
+        
+        	hint: each argument can only be matched once, remove one of the above
+`,
+		},
+
+		{
+			name: "Test_Arg_Value_Failed_FirstPlace_FirstArg",
+			expected: `    failed_arg_value_test.go:35: Target.Full call #1 argument "ctx" did not match
+          want: context.backgroundCtx{emptyCtx:context.emptyCtx{}}
+           got: &context.valueCtx{Context:context.backgroundCtx{emptyCtx:context.emptyCtx{}}, key:"key", val:"val"}
+        method: reflect.DeepEqual
+        
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_arg_value_test.go:33
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Value_Failed_SecondPlace_FirstArg",
+			expected: `    failed_arg_value_test.go:45: Target.Full call #1 argument "input" did not match
+          want: "a"
+           got: "anything"
+        method: ==
+        
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_arg_value_test.go:43
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Value_Failed_FirstPlace_SecondArg",
+			expected: `    failed_arg_value_test.go:54: Target.Full call #1 argument "input" did not match
+          want: "a"
+           got: "anything"
+        method: ==
+        
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_arg_value_test.go:52
+        	or use STUB for fine-grained control
+`,
+		},
+
+		{
+			name: "Test_Arg_Value_Failed_SecondPlace_SecondArg",
+			expected: `    failed_arg_value_test.go:64: Target.Full call #1 argument "input" did not match
+          want: "a"
+           got: "anything"
+        method: ==
+        
+        hint: for custom matching use .Match[arg](func(...) bool) at failed_arg_value_test.go:62
+        	or use STUB for fine-grained control
 `,
 		},
 		// ---
