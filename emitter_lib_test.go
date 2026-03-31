@@ -290,3 +290,28 @@ func Test_LibraryData(t *testing.T) {
 		})
 	}
 }
+
+func libData() LibraryData {
+	return LibraryData{
+		CallerLocationFunc:            "libCallerLocation",
+		MethodInterface:               "libMockMethod",
+		MessageWriteArgumentsFunc:     "libMessageWriteArguments",
+		MessageMatchFailFunc:          "libMessageMatchFail",
+		MessageNotImplementedFunc:     "libMessageNotImplemented",
+		MessageCallHistoryFunc:        "libMessageCallHistory",
+		MessageTooManyCallsFunc:       "libMessageTooManyCalls",
+		MessageMatchByNilFunc:         "libMessageMatchByNil",
+		MessageExpectByNilFunc:        "libMessageExpectByNil",
+		MessageExpectAfterStubFunc:    "libMessageExpectAfterStub",
+		MessageStubByNilFunc:          "libMessageStubByNil",
+		MessageStubAfterExpectFunc:    "libMessageStubAfterExpect",
+		MessageDuplicateStubFunc:      "libMessageDuplicateStub",
+		MessageExpectButNotCalledFunc: "libMessageExpectButNotCalled",
+		MessageMatchArgByNilFunc:      "libMessageMatchArgByNil",
+		MessageDuplicateMatchArgFunc:  "libMessageDuplicateMatchArg",
+		MessageMatchArgHintFunc:       "libMessageMatchArgHint",
+		MatchArgumentFunc:             "libMatchArgument",
+		ReflectEqualMatcherFunc:       "libReflectEqualMatcher",
+		BasicComparisonMatcherFunc:    "libBasicComparisonMatcher",
+	}
+}

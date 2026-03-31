@@ -59,7 +59,7 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 		s.target.td = &targetTestDouble{}
 	}
 
-	var spy = s.target.td.Full
+	spy := s.target.td.Full
 	if spy == nil {
 		spy = &targetFull{stubLocation: libCallerLocation(2)}
 		s.target.td.Full = spy
@@ -159,7 +159,7 @@ func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
 	}
 
 	for i, call := range m.Calls { // skip:!expect
-		args := []any{"ctx", call.Arguments.ctx, "input", call.Arguments.input}
+		args := []any{"ctx", call.Argument.ctx, "input", call.Argument.input}
 		libMessageCallHistory(sb, i, m.expects[i].location, call.Location, args)
 	}
 }
@@ -197,9 +197,9 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 
 func (m *targetFull) capture(args targetFullArgument, returns targetFullReturn) ([]Result, error) {
 	m.Calls = append(m.Calls, targetFullCall{
-		Location:  libCallerLocation(4),
-		Arguments: args,
-		Returns:   returns,
+		Location: libCallerLocation(4),
+		Argument: args,
+		Return:   returns,
 	})
 	return returns.first, returns.second
 }
@@ -212,9 +212,9 @@ func (m *targetFull) verify(index int) { // skip:!expect
 }
 
 type targetFullCall struct {
-	Location  string
-	Arguments targetFullArgument
-	Returns   targetFullReturn
+	Location string
+	Argument targetFullArgument
+	Return   targetFullReturn
 }
 
 type targetFullArgument struct {

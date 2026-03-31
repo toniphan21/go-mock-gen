@@ -25,8 +25,8 @@ type LibraryData struct {
 	BasicComparisonMatcherFunc    string
 }
 
-func (lib *LibraryData) CallerLocationCode() jen.Code {
-	return jen.Func().Id(lib.CallerLocationFunc).Params(
+func (d *LibraryData) CallerLocationCode() jen.Code {
+	return jen.Func().Id(d.CallerLocationFunc).Params(
 		jen.Id("skip").Int(),
 	).String().Block(
 		jen.List(
@@ -45,8 +45,8 @@ func (lib *LibraryData) CallerLocationCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MethodInterfaceCode() jen.Code {
-	return jen.Type().Id(lib.MethodInterface).Interface(
+func (d *LibraryData) MethodInterfaceCode() jen.Code {
+	return jen.Type().Id(d.MethodInterface).Interface(
 		jen.Id("methodName").Params().String(),
 		jen.Id("interfaceName").Params().String(),
 		jen.Id("buildCallHistory").Params(
@@ -63,8 +63,8 @@ func (lib *LibraryData) MethodInterfaceCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageWriteArgumentsCode() jen.Code {
-	return jen.Func().Id(lib.MessageWriteArgumentsFunc).Params(
+func (d *LibraryData) MessageWriteArgumentsCode() jen.Code {
+	return jen.Func().Id(d.MessageWriteArgumentsFunc).Params(
 		jen.Id("sb").Op("*").Qual("strings", "Builder"),
 		jen.Id("template").String(),
 		jen.Id("args").Index().Any(),
@@ -121,9 +121,9 @@ func (lib *LibraryData) MessageWriteArgumentsCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageMatchFailCode() jen.Code {
-	return jen.Func().Id(lib.MessageMatchFailFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageMatchFailCode() jen.Code {
+	return jen.Func().Id(d.MessageMatchFailFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("matchedAt").String(),
 		jen.Id("index").Int(),
 		jen.Id("args").Index().Any(),
@@ -142,7 +142,7 @@ func (lib *LibraryData) MessageMatchFailCode() jen.Code {
 				jen.Lit("arguments:\n"),
 			),
 		),
-		jen.Id(lib.MessageWriteArgumentsFunc).Call(
+		jen.Id(d.MessageWriteArgumentsFunc).Call(
 			jen.Id("sb"),
 			jen.Lit("\t%[MAX-KEY-LEN]s = %#v\n"),
 			jen.Id("args"),
@@ -162,8 +162,8 @@ func (lib *LibraryData) MessageMatchFailCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageNotImplementedCode() jen.Code {
-	return jen.Func().Id(lib.MessageNotImplementedFunc).Params(
+func (d *LibraryData) MessageNotImplementedCode() jen.Code {
+	return jen.Func().Id(d.MessageNotImplementedFunc).Params(
 		jen.Id("interfaceName").String(),
 		jen.Id("methodName").String(),
 		jen.Id("signature").String(),
@@ -189,11 +189,11 @@ func (lib *LibraryData) MessageNotImplementedCode() jen.Code {
 		jen.Id("sb").Dot("WriteString").Call(
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("called at: %s\n"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(jen.Lit("arguments:\n")),
-		jen.Id(lib.MessageWriteArgumentsFunc).Call(
+		jen.Id(d.MessageWriteArgumentsFunc).Call(
 			jen.Id("sb"),
 			jen.Lit("\t%[MAX-KEY-LEN]s = %#v\n"),
 			jen.Id("args"),
@@ -215,8 +215,8 @@ func (lib *LibraryData) MessageNotImplementedCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageCallHistoryCode() jen.Code {
-	return jen.Func().Id(lib.MessageCallHistoryFunc).Params(
+func (d *LibraryData) MessageCallHistoryCode() jen.Code {
+	return jen.Func().Id(d.MessageCallHistoryFunc).Params(
 		jen.Id("sb").Op("*").Qual("strings", "Builder"),
 		jen.Id("index").Int(),
 		jen.Id("expectedAt").String(),
@@ -241,7 +241,7 @@ func (lib *LibraryData) MessageCallHistoryCode() jen.Code {
 				jen.Lit("\t   arguments:\n"),
 			),
 		),
-		jen.Id(lib.MessageWriteArgumentsFunc).Call(
+		jen.Id(d.MessageWriteArgumentsFunc).Call(
 			jen.Id("sb"),
 			jen.Lit("\t\t%[MAX-KEY-LEN]s = %#v\n"),
 			jen.Id("args"),
@@ -251,9 +251,9 @@ func (lib *LibraryData) MessageCallHistoryCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageTooManyCallsCode() jen.Code {
-	return jen.Func().Id(lib.MessageTooManyCallsFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageTooManyCallsCode() jen.Code {
+	return jen.Func().Id(d.MessageTooManyCallsFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("want").Int(),
 		jen.Id("got").Int(),
 		jen.Id("args").Index().Any(),
@@ -287,7 +287,7 @@ func (lib *LibraryData) MessageTooManyCallsCode() jen.Code {
 		jen.Id("sb").Dot("WriteString").Call(
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\t   called at: %s\n"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(4)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(4)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -295,7 +295,7 @@ func (lib *LibraryData) MessageTooManyCallsCode() jen.Code {
 				jen.Lit("\t   arguments:\n"),
 			),
 		),
-		jen.Id(lib.MessageWriteArgumentsFunc).Call(
+		jen.Id(d.MessageWriteArgumentsFunc).Call(
 			jen.Id("sb"),
 			jen.Lit("\t\t%[MAX-KEY-LEN]s = %#v\n"),
 			jen.Id("args"),
@@ -311,9 +311,9 @@ func (lib *LibraryData) MessageTooManyCallsCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageMatchByNilCode() jen.Code {
-	return jen.Func().Id(lib.MessageMatchByNilFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageMatchByNilCode() jen.Code {
+	return jen.Func().Id(d.MessageMatchByNilFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -330,9 +330,9 @@ func (lib *LibraryData) MessageMatchByNilCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageExpectByNilCode() jen.Code {
-	return jen.Func().Id(lib.MessageExpectByNilFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageExpectByNilCode() jen.Code {
+	return jen.Func().Id(d.MessageExpectByNilFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -345,7 +345,7 @@ func (lib *LibraryData) MessageExpectByNilCode() jen.Code {
 		jen.Id("sb").Dot("WriteString").Call(
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\tcalled at: %s\n\n"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -361,9 +361,9 @@ func (lib *LibraryData) MessageExpectByNilCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageExpectAfterStubCode() jen.Code {
-	return jen.Func().Id(lib.MessageExpectAfterStubFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageExpectAfterStubCode() jen.Code {
+	return jen.Func().Id(d.MessageExpectAfterStubFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("stubAt").String(),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
@@ -385,7 +385,7 @@ func (lib *LibraryData) MessageExpectAfterStubCode() jen.Code {
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\t%14s: %s\n\n"),
 				jen.Lit("EXPECT used at"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -395,9 +395,9 @@ func (lib *LibraryData) MessageExpectAfterStubCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageStubByNilCode() jen.Code {
-	return jen.Func().Id(lib.MessageStubByNilFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageStubByNilCode() jen.Code {
+	return jen.Func().Id(d.MessageStubByNilFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("calledAt").String(),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
@@ -421,9 +421,9 @@ func (lib *LibraryData) MessageStubByNilCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageStubAfterExpectCode() jen.Code {
-	return jen.Func().Id(lib.MessageStubAfterExpectFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageStubAfterExpectCode() jen.Code {
+	return jen.Func().Id(d.MessageStubAfterExpectFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("expectAt").String(),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
@@ -445,7 +445,7 @@ func (lib *LibraryData) MessageStubAfterExpectCode() jen.Code {
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\t%14s: %s\n\n"),
 				jen.Lit("STUB used at"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -455,9 +455,9 @@ func (lib *LibraryData) MessageStubAfterExpectCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageDuplicateStubCode() jen.Code {
-	return jen.Func().Id(lib.MessageDuplicateStubFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageDuplicateStubCode() jen.Code {
+	return jen.Func().Id(d.MessageDuplicateStubFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("firstUsedAt").String(),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
@@ -479,7 +479,7 @@ func (lib *LibraryData) MessageDuplicateStubCode() jen.Code {
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\t%14s: %s\n\n"),
 				jen.Lit("second used at"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 		jen.Id("sb").Dot("WriteString").Call(
@@ -493,9 +493,9 @@ func (lib *LibraryData) MessageDuplicateStubCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageExpectButNotCalledCode() jen.Code {
-	return jen.Func().Id(lib.MessageExpectButNotCalledFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageExpectButNotCalledCode() jen.Code {
+	return jen.Func().Id(d.MessageExpectButNotCalledFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("want").Int(),
 		jen.Id("got").Int(),
 		jen.Id("index").Int(),
@@ -532,9 +532,9 @@ func (lib *LibraryData) MessageExpectButNotCalledCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageMatchArgByNilCode() jen.Code {
-	return jen.Func().Id(lib.MessageMatchArgByNilFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageMatchArgByNilCode() jen.Code {
+	return jen.Func().Id(d.MessageMatchArgByNilFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("method").String(),
 	).String().Block(
 		jen.Id("sb").Op(":=").Op("&").Qual("strings", "Builder").Values(),
@@ -553,9 +553,9 @@ func (lib *LibraryData) MessageMatchArgByNilCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageDuplicateMatchArgCode() jen.Code {
-	return jen.Func().Id(lib.MessageDuplicateMatchArgFunc).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+func (d *LibraryData) MessageDuplicateMatchArgCode() jen.Code {
+	return jen.Func().Id(d.MessageDuplicateMatchArgFunc).Params(
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("method").String(),
 		jen.Id("firstUsedAt").String(),
 	).String().Block(
@@ -582,22 +582,22 @@ func (lib *LibraryData) MessageDuplicateMatchArgCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) MessageMatchArgHintCode() jen.Code {
-	return jen.Func().Id(lib.MessageMatchArgHintFunc).Params().String().Block(
+func (d *LibraryData) MessageMatchArgHintCode() jen.Code {
+	return jen.Func().Id(d.MessageMatchArgHintFunc).Params().String().Block(
 		jen.Return(
 			jen.Qual("fmt", "Sprintf").Call(
 				jen.Lit("\thint: check argument matching at %s\n\t\t"+"or use STUB for fine-grained control"),
-				jen.Id(lib.CallerLocationFunc).Call(jen.Lit(3)),
+				jen.Id(d.CallerLocationFunc).Call(jen.Lit(3)),
 			),
 		),
 	)
 }
 
-func (lib *LibraryData) MatchArgumentCode() jen.Code {
-	return jen.Func().Id(lib.MatchArgumentFunc).Types(
+func (d *LibraryData) MatchArgumentCode() jen.Code {
+	return jen.Func().Id(d.MatchArgumentFunc).Types(
 		jen.Id("T").Any(),
 	).Params(
-		jen.Id("m").Id(lib.MethodInterface),
+		jen.Id("m").Id(d.MethodInterface),
 		jen.Id("index").Int(),
 		jen.Id("name").String(),
 		jen.Id("got").Id("T"),
@@ -682,8 +682,8 @@ func (lib *LibraryData) MatchArgumentCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) ReflectEqualMatcherCode() jen.Code {
-	return jen.Func().Id(lib.ReflectEqualMatcherFunc).Types(
+func (d *LibraryData) ReflectEqualMatcherCode() jen.Code {
+	return jen.Func().Id(d.ReflectEqualMatcherFunc).Types(
 		jen.Id("T").Any(),
 	).Params(
 		jen.Id("want").Id("T"),
@@ -701,8 +701,8 @@ func (lib *LibraryData) ReflectEqualMatcherCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) BasicComparisonMatcherCode() jen.Code {
-	return jen.Func().Id(lib.BasicComparisonMatcherFunc).Types(
+func (d *LibraryData) BasicComparisonMatcherCode() jen.Code {
+	return jen.Func().Id(d.BasicComparisonMatcherFunc).Types(
 		jen.Id("T").Comparable(),
 	).Params(
 		jen.Id("want").Id("T"),
@@ -717,27 +717,27 @@ func (lib *LibraryData) BasicComparisonMatcherCode() jen.Code {
 	)
 }
 
-func (lib *LibraryData) GenerateCode() []jen.Code {
+func (d *LibraryData) GenerateCode() []jen.Code {
 	return []jen.Code{
-		lib.CallerLocationCode(), jen.Line(), jen.Line(),
-		lib.MethodInterfaceCode(), jen.Line(), jen.Line(),
-		lib.MessageWriteArgumentsCode(), jen.Line(), jen.Line(),
-		lib.MessageMatchFailCode(), jen.Line(), jen.Line(),
-		lib.MessageNotImplementedCode(), jen.Line(), jen.Line(),
-		lib.MessageCallHistoryCode(), jen.Line(), jen.Line(),
-		lib.MessageTooManyCallsCode(), jen.Line(), jen.Line(),
-		lib.MessageMatchByNilCode(), jen.Line(), jen.Line(),
-		lib.MessageExpectByNilCode(), jen.Line(), jen.Line(),
-		lib.MessageExpectAfterStubCode(), jen.Line(), jen.Line(),
-		lib.MessageStubByNilCode(), jen.Line(), jen.Line(),
-		lib.MessageStubAfterExpectCode(), jen.Line(), jen.Line(),
-		lib.MessageDuplicateStubCode(), jen.Line(), jen.Line(),
-		lib.MessageExpectButNotCalledCode(), jen.Line(), jen.Line(),
-		lib.MessageMatchArgByNilCode(), jen.Line(), jen.Line(),
-		lib.MessageDuplicateMatchArgCode(), jen.Line(), jen.Line(),
-		lib.MessageMatchArgHintCode(), jen.Line(), jen.Line(),
-		lib.MatchArgumentCode(), jen.Line(), jen.Line(),
-		lib.ReflectEqualMatcherCode(), jen.Line(), jen.Line(),
-		lib.BasicComparisonMatcherCode(), jen.Line(), jen.Line(),
+		d.CallerLocationCode(), jen.Line(), jen.Line(),
+		d.MethodInterfaceCode(), jen.Line(), jen.Line(),
+		d.MessageWriteArgumentsCode(), jen.Line(), jen.Line(),
+		d.MessageMatchFailCode(), jen.Line(), jen.Line(),
+		d.MessageNotImplementedCode(), jen.Line(), jen.Line(),
+		d.MessageCallHistoryCode(), jen.Line(), jen.Line(),
+		d.MessageTooManyCallsCode(), jen.Line(), jen.Line(),
+		d.MessageMatchByNilCode(), jen.Line(), jen.Line(),
+		d.MessageExpectByNilCode(), jen.Line(), jen.Line(),
+		d.MessageExpectAfterStubCode(), jen.Line(), jen.Line(),
+		d.MessageStubByNilCode(), jen.Line(), jen.Line(),
+		d.MessageStubAfterExpectCode(), jen.Line(), jen.Line(),
+		d.MessageDuplicateStubCode(), jen.Line(), jen.Line(),
+		d.MessageExpectButNotCalledCode(), jen.Line(), jen.Line(),
+		d.MessageMatchArgByNilCode(), jen.Line(), jen.Line(),
+		d.MessageDuplicateMatchArgCode(), jen.Line(), jen.Line(),
+		d.MessageMatchArgHintCode(), jen.Line(), jen.Line(),
+		d.MatchArgumentCode(), jen.Line(), jen.Line(),
+		d.ReflectEqualMatcherCode(), jen.Line(), jen.Line(),
+		d.BasicComparisonMatcherCode(), jen.Line(), jen.Line(),
 	}
 }
