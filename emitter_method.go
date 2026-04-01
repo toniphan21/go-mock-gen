@@ -5,84 +5,6 @@ import (
 	genlib "nhatp.com/go/gen-lib"
 )
 
-//	func (m *targetFull) methodName() string {
-//		return "Full"
-//	}
-//
-//	func (m *targetFull) interfaceName() string {
-//		return "Target"
-//	}
-//
-//	func (m *targetFull) fatal(index int, msg string) {
-//		m.verified = true              // skip:!expect
-//		m.expects[index].tb.Helper()   // skip:!expect
-//		m.expects[index].tb.Fatal(msg) // skip:!expect
-//	}
-//
-//	func (m *targetFull) panic(msg string) {
-//		m.verified = true // skip:!expect
-//		panic(msg)
-//	}
-//
-//	func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
-//		if header != "" && len(m.Calls) != 0 { // skip:!expect
-//			sb.WriteString(fmt.Sprintf("%s:\n", header))
-//		}
-//
-//		for i, call := range m.Calls { // skip:!expect
-//			args := []any{"ctx", call.Argument.ctx, "input", call.Argument.input}
-//			libMessageCallHistory(sb, i, m.expects[i].location, call.Location, args)
-//		}
-//	}
-//
-//	func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, error) {
-//		v0, v1 := m.stub(ctx, input)
-//		return m.capture(
-//			targetFullArgument{ctx: ctx, input: input},
-//			targetFullReturn{first: v0, second: v1},
-//		)
-//	}
-//
-// func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) { // skip:!expect
-//
-//		args := []any{"ctx", ctx, "input", input}
-//		index := len(m.Calls)
-//		if index >= len(m.expects) {
-//			m.panic(libMessageTooManyCalls(m, len(m.expects), index+1, args))
-//		}
-//
-//		expect := m.expects[index]
-//		if expect.match != nil && !expect.match(ctx, input) {
-//			expect.tb.Helper()
-//			m.fatal(index, libMessageMatchFail(m, expect.matchLocation, index, args))
-//		}
-//
-//		expect.tb.Helper()
-//		libMatchArgument(m, index, "ctx", ctx, expect.matcher.ctx, expect.matcherWants, expect.matcherMethods, expect.matcherHints, expect.tb, expect.matcherLocations["ctx"])
-//		libMatchArgument(m, index, "input", input, expect.matcher.input, expect.matcherWants, expect.matcherMethods, expect.matcherHints, expect.tb, expect.matcherLocations["input"])
-//
-//		return m.capture(
-//			targetFullArgument{ctx: ctx, input: input},
-//			expect.returns,
-//		)
-//	}
-//
-//	func (m *targetFull) capture(args targetFullArgument, returns targetFullReturn) ([]Result, error) {
-//		m.Calls = append(m.Calls, targetFullCall{
-//			Location:  libCallerLocation(4),
-//			Argument: args,
-//			Return:   returns,
-//		})
-//		return returns.first, returns.second
-//	}
-//
-// func (m *targetFull) verify(index int) { // skip:!expect
-//		if !m.verified && index >= len(m.Calls) {
-//			m.expects[index].tb.Helper()
-//			m.expects[index].tb.Fatal(libMessageExpectButNotCalled(m, len(m.expects), len(m.Calls), index))
-//		}
-//	}
-
 type MethodData struct {
 	TargetMethodStruct                string
 	TargetMethodCallStruct            string
@@ -90,6 +12,8 @@ type MethodData struct {
 	TargetMethodArgumentMatcherStruct string
 	TargetMethodReturnStruct          string
 	TargetMethodExpectStruct          string
+	Interface                         string
+	Name                              string
 	Arguments                         []VarInfo
 	Returns                           []VarInfo
 	Lib                               LibraryData
@@ -106,6 +30,304 @@ func (d *MethodData) structCode() jen.Code {
 			g.Id("verified").Bool()
 		}
 	}).Line()
+}
+
+func (d *MethodData) methodNameFuncCode(receiver string) jen.Code {
+	return jen.Func().
+		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("methodName").Params().String().
+		Block(jen.Return(jen.Lit(d.Name))).Line()
+}
+
+func (d *MethodData) interfaceNameFuncCode(receiver string) jen.Code {
+	return jen.Func().
+		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("interfaceName").Params().String().
+		Block(jen.Return(jen.Lit(d.Interface))).Line()
+}
+
+func (d *MethodData) fatalFuncCode(receiver string) jen.Code {
+	var body []jen.Code
+	if !d.SkipExpect {
+		body = append(body,
+			jen.Id(receiver).Dot("verified").Op("=").Lit(true),
+			jen.Id(receiver).Dot("expects").Index(jen.Id("index")).Dot("tb").Dot("Helper").Call(),
+			jen.Id(receiver).Dot("expects").Index(jen.Id("index")).Dot("tb").Dot("Fatal").Call(jen.Id("msg")),
+		)
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("fatal").
+		Params(jen.Id("index").Int(), jen.Id("msg").String()).
+		Block(body...).Line()
+}
+
+func (d *MethodData) panicFuncCode(receiver string) jen.Code {
+	var body []jen.Code
+	if !d.SkipExpect {
+		body = append(body, jen.Id(receiver).Dot("verified").Op("=").Lit(true))
+	}
+	body = append(body, jen.Panic(jen.Id("msg")))
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("panic").
+		Params(jen.Id("msg").String()).
+		Block(body...).Line()
+}
+
+func (d *MethodData) buildCallHistoryFuncCode(receiver string) jen.Code {
+	var body []jen.Code
+	if !d.SkipExpect {
+		var args []jen.Code
+		for _, arg := range d.Arguments {
+			args = append(args, jen.Lit(arg.Name), jen.Id("v").Dot("Argument").Dot(arg.Field))
+		}
+
+		argsCode := jen.Id("a").Op(":=").Index().Any().Values(args...)
+
+		body = []jen.Code{
+			jen.If(
+				jen.Id("header").Op("!=").Lit("").Op("&&").
+					Len(jen.Id(receiver).Dot("Calls")).Op("!=").Lit(0),
+			).Block(
+				jen.Id("sb").Dot("WriteString").Call(
+					jen.Qual("fmt", "Sprintf").Call(jen.Lit("%s:\n"), jen.Id("header")),
+				),
+			),
+			jen.Line(),
+			jen.For(
+				jen.List(jen.Id("i"), jen.Id("v")).Op(":=").Range().
+					Id(receiver).Dot("Calls"),
+			).Block(
+				argsCode,
+				jen.Id(d.Lib.MessageCallHistoryFunc).Call(
+					jen.Id("sb"),
+					jen.Id("i"),
+					jen.Id(receiver).Dot("expects").Index(jen.Id("i")).Dot("location"),
+					jen.Id("v").Dot("Location"),
+					jen.Id("a"),
+				),
+			),
+		}
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("buildCallHistory").
+		Params(
+			jen.Id("sb").Op("*").Qual("strings", "Builder"),
+			jen.Id("header").String(),
+		).
+		Block(body...).Line()
+}
+
+func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
+	var params, results, argumentFields, returnFields, captureArgs, passed, vars []jen.Code
+	var body []jen.Code
+
+	nm := genlib.NewNameManager("v", nil)
+	nm.Reserve(receiver)
+	for _, v := range d.Arguments {
+		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		nm.Reserve(v.Name)
+
+		passed = append(passed, jen.Id(v.Name))
+		argumentFields = append(argumentFields, jen.Id(v.Field).Op(":").Id(v.Name))
+	}
+
+	for _, v := range d.Returns {
+		if v.OriginalName != "" {
+			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			nm.Reserve(v.OriginalName)
+		} else {
+			results = append(results, genlib.TypeToJenCode(v.Type))
+		}
+	}
+
+	for _, v := range d.Returns {
+		vn := nm.Next()
+		vars = append(vars, jen.Id(vn))
+		returnFields = append(returnFields, jen.Id(v.Field).Op(":").Id(vn))
+	}
+
+	if len(d.Arguments) > 0 {
+		captureArgs = append(captureArgs, jen.Id(d.TargetMethodArgumentStruct).Values(argumentFields...))
+	}
+
+	if len(d.Returns) == 0 {
+		body = append(body, jen.Id(receiver).Dot("stub").Call(passed...))
+		body = append(body, jen.Id(receiver).Dot("capture").Call(captureArgs...))
+	} else {
+		captureArgs = append(captureArgs, jen.Id(d.TargetMethodReturnStruct).Values(returnFields...))
+		body = append(body, jen.List(vars...).Op(":=").Id(receiver).Dot("stub").Call(passed...))
+		body = append(body, jen.Return(jen.Id(receiver).Dot("capture").Call(captureArgs...)))
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("invokeStub").
+		Params(params...).Params(results...).
+		Block(body...).Line()
+}
+
+func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
+	if d.SkipExpect {
+		return nil
+	}
+
+	var params, results, args, argIds []jen.Code
+
+	nm := genlib.NewNameManager("v", nil)
+	nm.Reserve(receiver)
+	for _, v := range d.Arguments {
+		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		args = append(args, jen.Lit(v.Name))
+		args = append(args, jen.Id(v.Name))
+		argIds = append(argIds, jen.Id(v.Name))
+		nm.Reserve(v.Name)
+	}
+	for _, v := range d.Returns {
+		if v.OriginalName != "" {
+			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			nm.Reserve(v.OriginalName)
+		} else {
+			results = append(results, genlib.TypeToJenCode(v.Type))
+		}
+	}
+
+	vArgs := nm.Next()
+	vIndex := nm.Next()
+	vExpect := nm.Next()
+
+	body := []jen.Code{
+		jen.Id(vArgs).Op(":=").Index().Any().Values(args...).Line(),
+		jen.Id(vIndex).Op(":=").Len(jen.Id(receiver).Dot("Calls")),
+		jen.If(jen.Id(vIndex).Op(">=").Len(jen.Id(receiver).Dot("expects"))).Block(
+			jen.Id(receiver).Dot("panic").Call(
+				jen.Id(d.Lib.MessageTooManyCallsFunc).Call(
+					jen.Id(receiver),
+					jen.Len(jen.Id(receiver).Dot("expects")),
+					jen.Id(vIndex).Op("+").Lit(1),
+					jen.Id(vArgs),
+				),
+			),
+		).Line(),
+
+		jen.Id(vExpect).Op(":=").Id(receiver).Dot("expects").Index(jen.Id(vIndex)),
+		jen.If(
+			jen.Id(vExpect).Dot("match").Op("!=").Nil().Op("&&").
+				Op("!").Id(vExpect).Dot("match").Call(argIds...),
+		).Block(
+			jen.Id(vExpect).Dot("tb").Dot("Helper").Call(),
+			jen.Id(receiver).Dot("fatal").Call(
+				jen.Id(vIndex),
+				jen.Id(d.Lib.MessageMatchFailFunc).Call(
+					jen.Id(receiver), jen.Id(vExpect).Dot("matchLocation"), jen.Id(vIndex), jen.Id(vArgs),
+				),
+			),
+		).Line(),
+	}
+
+	if len(d.Arguments) > 0 {
+		body = append(body, jen.Id(vExpect).Dot("tb").Dot("Helper").Call())
+	}
+
+	var argFields []jen.Code
+	for _, arg := range d.Arguments {
+		body = append(body,
+			jen.Id(d.Lib.MatchArgumentFunc).Call(
+				jen.Id(receiver),
+				jen.Id(vIndex),
+				jen.Lit(arg.Name),
+				jen.Id(arg.Name),
+				jen.Id(vExpect).Dot("matcher").Dot(arg.Name),
+				jen.Id(vExpect).Dot("matcherWants"),
+				jen.Id(vExpect).Dot("matcherMethods"),
+				jen.Id(vExpect).Dot("matcherHints"),
+				jen.Id(vExpect).Dot("tb"),
+				jen.Id(vExpect).Dot("matcherLocations").Index(jen.Lit(arg.Name)),
+			),
+		)
+		argFields = append(argFields, jen.Id(arg.Field).Op(":").Id(arg.Name))
+	}
+
+	if len(d.Arguments) > 0 {
+		body = append(body, jen.Line())
+	}
+
+	var captureArgs []jen.Code
+	if len(d.Arguments) > 0 {
+		captureArgs = append(captureArgs, jen.Id(d.TargetMethodArgumentStruct).Values(argFields...))
+	}
+
+	if len(d.Returns) == 0 {
+		body = append(body, jen.Id(receiver).Dot("capture").Call(captureArgs...))
+	} else {
+		captureArgs = append(captureArgs, jen.Id("expect").Dot("returns"))
+		body = append(body, jen.Return(jen.Id(receiver).Dot("capture").Call(captureArgs...)))
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("invokeExpect").Params(params...).Params(results...).
+		Block(body...).Line()
+}
+
+func (d *MethodData) captureFuncCode(receiver string) jen.Code {
+	var params, results, returns, callFields []jen.Code
+
+	for _, v := range d.Returns {
+		if v.OriginalName != "" {
+			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+		} else {
+			results = append(results, genlib.TypeToJenCode(v.Type))
+		}
+		returns = append(returns, jen.Id("returns").Dot(v.Field))
+	}
+
+	callFields = append(callFields, jen.Id("Location").Op(":").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(4)))
+	if len(d.Arguments) > 0 {
+		params = append(params, jen.Id("args").Id(d.TargetMethodArgumentStruct))
+		callFields = append(callFields, jen.Id("Argument").Op(":").Id("args"))
+	}
+
+	if len(d.Returns) > 0 {
+		params = append(params, jen.Id("returns").Id(d.TargetMethodReturnStruct))
+		callFields = append(callFields, jen.Id("Return").Op(":").Id("returns"))
+	}
+
+	body := []jen.Code{
+		jen.Id(receiver).Dot("Calls").Op("=").Append(
+			jen.Id(receiver).Dot("Calls"),
+			jen.Id(d.TargetMethodCallStruct).Values(callFields...),
+		),
+	}
+
+	if len(results) > 0 {
+		body = append(body, jen.Return(returns...))
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("capture").Params(params...).Params(results...).
+		Block(body...).Line()
+}
+
+func (d *MethodData) verifyFuncCode(receiver string) jen.Code {
+	if d.SkipExpect {
+		return nil
+	}
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Id("verify").Params(jen.Id("index").Int()).
+		Block(jen.If(
+			jen.Op("!").Id(receiver).Dot("verified").
+				Op("&&").
+				Id("index").Op(">=").Len(jen.Id(receiver).Dot("Calls")),
+		).Block(
+			jen.Id(receiver).Dot("expects").Index(jen.Id("index")).Dot("tb").Dot("Helper").Call(),
+			jen.Id(receiver).Dot("expects").Index(jen.Id("index")).Dot("tb").Dot("Fatal").Call(
+				jen.Id(d.Lib.MessageExpectButNotCalledFunc).Call(
+					jen.Id(receiver),
+					jen.Len(jen.Id(receiver).Dot("expects")),
+					jen.Len(jen.Id(receiver).Dot("Calls")),
+					jen.Id("index"),
+				),
+			),
+		)).Line()
 }
 
 func (d *MethodData) callStructCode() jen.Code {
@@ -185,11 +407,39 @@ func (d *MethodData) expectStructCode() jen.Code {
 }
 
 func (d *MethodData) GenerateCode() []jen.Code {
-	code := []jen.Code{
-		d.structCode(),
+	nm := genlib.NewNameManager("m", nil)
+	for _, v := range d.Arguments {
+		nm.Reserve(v.Name)
 	}
-	if v := d.expectStructCode(); v != nil {
-		code = append(code, v)
+	for _, v := range d.Returns {
+		if v.OriginalName != "" {
+			nm.Reserve(v.OriginalName)
+		}
+	}
+	receiver := nm.Request("m")
+
+	parts := []jen.Code{
+		d.structCode(),
+		d.methodNameFuncCode(receiver),
+		d.interfaceNameFuncCode(receiver),
+		d.fatalFuncCode(receiver),
+		d.panicFuncCode(receiver),
+		d.buildCallHistoryFuncCode(receiver),
+		d.invokeStubFuncCode(receiver),
+		d.invokeExpectFuncCode(receiver),
+		d.captureFuncCode(receiver),
+		d.verifyFuncCode(receiver),
+		d.callStructCode(),
+		d.argumentStructCode(),
+		d.returnStructCode(),
+		d.expectStructCode(),
+	}
+
+	var code []jen.Code
+	for _, v := range parts {
+		if v != nil {
+			code = append(code, v)
+		}
 	}
 	return code
 }

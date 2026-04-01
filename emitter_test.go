@@ -1,6 +1,7 @@
 package mockgen
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -28,6 +29,7 @@ func runEmitterTest[T emitter](t *testing.T, em T, expected string) {
 		jf.Add(v)
 	}
 	out := jf.GoString()
+	fmt.Println(out)
 	assert.Equal(t, expected, out)
 }
 
