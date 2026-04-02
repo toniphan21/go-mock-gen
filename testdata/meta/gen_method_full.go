@@ -9,14 +9,27 @@ import (
 
 // ---
 
+// done - TargetData.constructorCode()
 func testTarget() *target {
 	return &target{td: &targetTestDouble{location: libCallerLocation(2)}}
 }
 
+// done - TargetData.targetStructCode()
 type target struct {
 	td *targetTestDouble
 }
 
+// done - TargetData.targetBuiltinFuncCode()
+func (m *target) STUB() *targetStubber {
+	return &targetStubber{target: m}
+}
+
+// done - TargetData.GenerateCode()
+func (m *target) EXPECT() *targetExpecter { // skip:!expect
+	return &targetExpecter{target: m}
+}
+
+// done - TargetData.implementationCode()
 func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 	interfaceName, methodName, signature := "Target", "Full", "(ctx Context, id string) ([]Result, error)"
 	args := []any{"ctx", ctx, "input", input}
@@ -41,19 +54,18 @@ func (m *target) Full(ctx context.Context, input string) ([]Result, error) {
 	panic(libMessageNotImplemented(interfaceName, methodName, signature, m.td.location, args))
 }
 
+// done - TargetData.targetStructCode()
 type targetTestDouble struct {
 	location string
 	Full     *targetFull
 }
 
+// done - TargetStubberData.targetStubberStructCode()
 type targetStubber struct {
 	target *target
 }
 
-func (m *target) STUB() *targetStubber {
-	return &targetStubber{target: m}
-}
-
+// done - TargetStubberData.stubCode()
 func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Result, error)) *targetFull {
 	if s.target.td == nil {
 		s.target.td = &targetTestDouble{}
@@ -83,10 +95,6 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 
 type targetExpecter struct { // skip:!expect
 	target *target
-}
-
-func (m *target) EXPECT() *targetExpecter { // skip:!expect
-	return &targetExpecter{target: m}
 }
 
 func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter { // skip:!expect
@@ -126,6 +134,7 @@ func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter { // skip:!expe
 	return &targetFullExpecter{target: mock, expect: mock.expects[index]}
 }
 
+// done - MethodData.structCode()
 type targetFull struct {
 	Calls        []targetFullCall
 	stub         func(ctx context.Context, input string) ([]Result, error)
@@ -134,25 +143,30 @@ type targetFull struct {
 	verified     bool                // skip:!expect
 }
 
+// done - MethodData.methodNameFuncCode()
 func (m *targetFull) methodName() string {
 	return "Full"
 }
 
+// done - MethodData.interfaceNameFuncCode()
 func (m *targetFull) interfaceName() string {
 	return "Target"
 }
 
+// done - MethodData.fatalFuncCode()
 func (m *targetFull) fatal(index int, msg string) {
 	m.verified = true              // skip:!expect
 	m.expects[index].tb.Helper()   // skip:!expect
 	m.expects[index].tb.Fatal(msg) // skip:!expect
 }
 
+// done - MethodData.panicFuncCode()
 func (m *targetFull) panic(msg string) {
 	m.verified = true // skip:!expect
 	panic(msg)
 }
 
+// done - MethodData.buildCallHistoryFuncCode()
 func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
 	if header != "" && len(m.Calls) != 0 { // skip:!expect
 		sb.WriteString(fmt.Sprintf("%s:\n", header))
@@ -164,6 +178,7 @@ func (m *targetFull) buildCallHistory(sb *strings.Builder, header string) {
 	}
 }
 
+// done - MethodData.invokeStubFuncCode()
 func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, error) {
 	v0, v1 := m.stub(ctx, input)
 	return m.capture(
@@ -172,6 +187,7 @@ func (m *targetFull) invokeStub(ctx context.Context, input string) ([]Result, er
 	)
 }
 
+// done - MethodData.invokeExpectFuncCode()
 func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, error) { // skip:!expect
 	args := []any{"ctx", ctx, "input", input}
 	index := len(m.Calls)
@@ -195,6 +211,7 @@ func (m *targetFull) invokeExpect(ctx context.Context, input string) ([]Result, 
 	)
 }
 
+// done - MethodData.captureFuncCode()
 func (m *targetFull) capture(args targetFullArgument, returns targetFullReturn) ([]Result, error) {
 	m.Calls = append(m.Calls, targetFullCall{
 		Location: libCallerLocation(4),
@@ -204,6 +221,7 @@ func (m *targetFull) capture(args targetFullArgument, returns targetFullReturn) 
 	return returns.first, returns.second
 }
 
+// done - MethodData.verifyFuncCode()
 func (m *targetFull) verify(index int) { // skip:!expect
 	if !m.verified && index >= len(m.Calls) {
 		m.expects[index].tb.Helper()
@@ -211,27 +229,32 @@ func (m *targetFull) verify(index int) { // skip:!expect
 	}
 }
 
+// done - MethodData.callStructCode()
 type targetFullCall struct {
 	Location string
 	Argument targetFullArgument
 	Return   targetFullReturn
 }
 
+// done - MethodData.argumentStructCode()
 type targetFullArgument struct {
 	ctx   context.Context
 	input string
 }
 
+// done - MethodData.argumentMatcherStructCode()
 type targetFullArgumentMatcher struct { // skip:!expect
 	ctx   func(context.Context) bool
 	input func(string) bool
 }
 
+// done - MethodData.returnStructCode()
 type targetFullReturn struct {
 	first  []Result
 	second error
 }
 
+// done - MethodData.expectStructCode()
 type targetFullExpect struct { // skip:!expect
 	match            func(ctx context.Context, input string) bool
 	matchLocation    string
@@ -246,15 +269,18 @@ type targetFullExpect struct { // skip:!expect
 	tb               testing.TB
 }
 
+// done - MethodExpecterData.structCode()
 type targetFullExpecter struct { // skip:!expect
 	target *targetFull
 	expect *targetFullExpect
 }
 
+// done - MethodExpecterData.GenerateCode()
 func (e *targetFullExpecter) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
+// done - MethodExpecterData.matchFuncCode()
 func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
@@ -266,6 +292,7 @@ func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input strin
 	return &targetFullExpecterWithMatch{expect: e.expect}
 }
 
+// done - MethodExpecterData.argumentFuncCode()
 func (e *targetFullExpecter) MatchCtx(matcher func(ctx context.Context) bool) *targetFullExpecterWithMatchArg { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
@@ -278,6 +305,7 @@ func (e *targetFullExpecter) MatchCtx(matcher func(ctx context.Context) bool) *t
 	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
 }
 
+// done - MethodExpecterData.argumentFuncCode()
 func (e *targetFullExpecter) MatchInput(matcher func(input string) bool) *targetFullExpecterWithMatchArg { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
@@ -290,6 +318,7 @@ func (e *targetFullExpecter) MatchInput(matcher func(input string) bool) *target
 	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
 }
 
+// done - MethodExpecterData.withFuncCode()
 func (e *targetFullExpecter) With(ctx context.Context, input string) *targetFullExpecterWithValue { // skip:!expect
 	e.WithCtx(ctx)
 	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
@@ -300,6 +329,7 @@ func (e *targetFullExpecter) With(ctx context.Context, input string) *targetFull
 	return &targetFullExpecterWithValue{expect: e.expect}
 }
 
+// done - MethodExpecterData.argumentFuncCode()
 func (e *targetFullExpecter) WithCtx(ctx context.Context) *targetFullExpecterWithValueArg { // skip:!expect
 	e.expect.matcher.ctx = libReflectEqualMatcher(ctx)
 	e.expect.matcherWants["ctx"] = ctx
@@ -309,6 +339,7 @@ func (e *targetFullExpecter) WithCtx(ctx context.Context) *targetFullExpecterWit
 	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 
+// done - MethodExpecterData.argumentFuncCode()
 func (e *targetFullExpecter) WithInput(input string) *targetFullExpecterWithValueArg { // skip:!expect
 	e.expect.matcher.input = libBasicComparisonMatcher(input)
 	e.expect.matcherWants["input"] = input
@@ -318,31 +349,38 @@ func (e *targetFullExpecter) WithInput(input string) *targetFullExpecterWithValu
 	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 
+// done - MethodExpecterValueData.structCode()
 type targetFullExpecterWithValue struct { // skip:!expect
 	expect *targetFullExpect
 }
 
+// done - MethodExpecterValueData.GenerateCode()
 func (e *targetFullExpecterWithValue) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
+// done - MethodExpecterMatchData.structCode()
 type targetFullExpecterWithMatch struct { // skip:!expect
 	expect *targetFullExpect
 }
 
+// done - MethodExpecterMatchData.GenerateCode()
 func (e *targetFullExpecterWithMatch) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
+// done - MethodExpecterMatchArgData.structCode()
 type targetFullExpecterWithMatchArg struct { // skip:!expect
 	expect *targetFullExpect
 	target *targetFull
 }
 
+// done - MethodExpecterMatchArgData.GenerateCode()
 func (e *targetFullExpecterWithMatchArg) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
+// done - MethodExpecterMatchArgData.GenerateCode()
 func (e *targetFullExpecterWithMatchArg) MatchCtx(matcher func(ctx context.Context) bool) *targetFullExpecterWithMatchArg { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
@@ -360,6 +398,7 @@ func (e *targetFullExpecterWithMatchArg) MatchCtx(matcher func(ctx context.Conte
 	return e
 }
 
+// done - MethodExpecterMatchArgData.GenerateCode()
 func (e *targetFullExpecterWithMatchArg) MatchInput(matcher func(input string) bool) *targetFullExpecterWithMatchArg { // skip:!expect
 	if matcher == nil {
 		e.expect.tb.Helper()
@@ -377,15 +416,18 @@ func (e *targetFullExpecterWithMatchArg) MatchInput(matcher func(input string) b
 	return e
 }
 
+// done - MethodExpecterValueArgData.structCode()
 type targetFullExpecterWithValueArg struct { // skip:!expect
 	expect *targetFullExpect
 	target *targetFull
 }
 
+// done - MethodExpecterValueArgData.GenerateCode()
 func (e *targetFullExpecterWithValueArg) Return(first []Result, second error) { // skip:!expect
 	e.expect.returns = targetFullReturn{first: first, second: second}
 }
 
+// done - MethodExpecterValueArgData.GenerateCode()
 func (e *targetFullExpecterWithValueArg) WithCtx(ctx context.Context) *targetFullExpecterWithValueArg { // skip:!expect
 	if e.expect.matcher.ctx != nil {
 		e.expect.tb.Helper()
@@ -400,6 +442,7 @@ func (e *targetFullExpecterWithValueArg) WithCtx(ctx context.Context) *targetFul
 	return e
 }
 
+// done - MethodExpecterValueArgData.GenerateCode()
 func (e *targetFullExpecterWithValueArg) WithInput(input string) *targetFullExpecterWithValueArg { // skip:!expect
 	if e.expect.matcher.input != nil {
 		e.expect.tb.Helper()

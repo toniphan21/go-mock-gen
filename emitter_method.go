@@ -431,6 +431,7 @@ func (d *MethodData) GenerateCode() []jen.Code {
 		d.verifyFuncCode(receiver),
 		d.callStructCode(),
 		d.argumentStructCode(),
+		d.argumentMatcherStructCode(),
 		d.returnStructCode(),
 		d.expectStructCode(),
 	}

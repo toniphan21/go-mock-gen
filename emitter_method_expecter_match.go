@@ -5,24 +5,6 @@ import (
 	genlib "nhatp.com/go/gen-lib"
 )
 
-func targetMethodExpecterReturnCode(receiverName, receiverType, targetMethodReturnStruct string, returns []VarInfo) jen.Code {
-	var params []jen.Code
-	var values []jen.Code
-	for _, v := range returns {
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
-		values = append(values, jen.Id(v.Field).Op(":").Id(v.Name))
-	}
-
-	return jen.Func().
-		Params(jen.Id(receiverName).Op("*").Id(receiverType)).
-		Id("Return").
-		Params(params...).
-		Block(
-			jen.Id(receiverName).Dot("expect").Dot("returns").Op("=").Id(targetMethodReturnStruct).Values(values...),
-		).
-		Line()
-}
-
 type MethodExpecterMatchData struct {
 	TargetMethodExpecterMatchStruct string
 	TargetMethodExpectStruct        string

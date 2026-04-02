@@ -70,7 +70,7 @@ func (d *MethodExpecterValueArgData) structCode() jen.Code {
 }
 
 func (d *MethodExpecterValueArgData) GenerateCode() []jen.Code {
-	if d.SkipExpect {
+	if d.SkipExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -82,10 +82,6 @@ func (d *MethodExpecterValueArgData) GenerateCode() []jen.Code {
 		nm.Reserve(v.Name)
 	}
 	receiver := nm.Request("e")
-
-	if len(d.Arguments) == 0 {
-		return nil
-	}
 
 	code := []jen.Code{
 		d.structCode(),

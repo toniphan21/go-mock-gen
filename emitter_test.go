@@ -1,7 +1,6 @@
 package mockgen
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -29,7 +28,6 @@ func runEmitterTest[T emitter](t *testing.T, em T, expected string) {
 		jf.Add(v)
 	}
 	out := jf.GoString()
-	fmt.Println(out)
 	assert.Equal(t, expected, out)
 }
 
@@ -187,6 +185,14 @@ func Test_targetMethodSignature(t *testing.T) {
 		},
 
 		{
+			name: "has a unnamed argument",
+			arguments: []VarInfo{
+				{Field: "input", OriginalName: "input", Type: gentest.Type("string")},
+			},
+			expected: "var out func(string)",
+		},
+
+		{
 			name: "has 2 arguments",
 			arguments: []VarInfo{
 				{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
@@ -288,6 +294,14 @@ func Test_targetMethodMatcherSignature(t *testing.T) {
 				{Name: "input", Field: "input", OriginalName: "input", Type: gentest.Type("string")},
 			},
 			expected: "var out func(input string) bool",
+		},
+
+		{
+			name: "has unnamed argument",
+			arguments: []VarInfo{
+				{Field: "input", OriginalName: "input", Type: gentest.Type("string")},
+			},
+			expected: "var out func(string) bool",
 		},
 
 		{

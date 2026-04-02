@@ -1,73 +1,150 @@
 package mockgen
 
-//type targetFullExpecter struct { // skip:!expect
-//	target *targetFull
-//	expect *targetFullExpect
-//}
-//
-//func (e *targetFullExpecter) Return(first []Result, second error) { // skip:!expect
-//	e.expect.returns = targetFullReturn{first: first, second: second}
-//}
-//
-//func (e *targetFullExpecter) Match(matcher func(ctx context.Context, input string) bool) *targetFullExpecterWithMatch { // skip:!expect
-//	if matcher == nil {
-//		e.expect.tb.Helper()
-//		e.target.fatal(e.expect.index, libMessageMatchByNil(e.target))
-//	}
-//
-//	e.expect.match = matcher
-//	e.expect.matchLocation = libCallerLocation(2)
-//	return &targetFullExpecterWithMatch{expect: e.expect}
-//}
-//
-//func (e *targetFullExpecter) MatchCtx(matcher func(ctx context.Context) bool) *targetFullExpecterWithMatchArg { // skip:!expect
-//	if matcher == nil {
-//		e.expect.tb.Helper()
-//		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchCtx"))
-//	}
-//
-//	e.expect.matcher.ctx = matcher
-//	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
-//	e.expect.matcherHints["ctx"] = libMessageMatchArgHint()
-//	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
-//}
-//
-//func (e *targetFullExpecter) MatchInput(matcher func(input string) bool) *targetFullExpecterWithMatchArg { // skip:!expect
-//	if matcher == nil {
-//		e.expect.tb.Helper()
-//		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchInput"))
-//	}
-//
-//	e.expect.matcher.input = matcher
-//	e.expect.matcherLocations["input"] = libCallerLocation(2)
-//	e.expect.matcherHints["input"] = libMessageMatchArgHint()
-//	return &targetFullExpecterWithMatchArg{expect: e.expect, target: e.target}
-//}
-//
-//func (e *targetFullExpecter) With(ctx context.Context, input string) *targetFullExpecterWithValue { // skip:!expect
-//	e.WithCtx(ctx)
-//	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
-//
-//	e.WithInput(input)
-//	e.expect.matcherLocations["input"] = libCallerLocation(2)
-//
-//	return &targetFullExpecterWithValue{expect: e.expect}
-//}
-//
-//func (e *targetFullExpecter) WithCtx(ctx context.Context) *targetFullExpecterWithValueArg { // skip:!expect
-//	e.expect.matcher.ctx = libReflectEqualMatcher(ctx)
-//	e.expect.matcherWants["ctx"] = ctx
-//	e.expect.matcherMethods["ctx"] = "reflect.DeepEqual"
-//	e.expect.matcherLocations["ctx"] = libCallerLocation(2)
-//
-//	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
-//}
-//
-//func (e *targetFullExpecter) WithInput(input string) *targetFullExpecterWithValueArg { // skip:!expect
-//	e.expect.matcher.input = libBasicComparisonMatcher(input)
-//	e.expect.matcherWants["input"] = input
-//	e.expect.matcherMethods["input"] = "=="
-//	e.expect.matcherLocations["input"] = libCallerLocation(2)
-//
-//	return &targetFullExpecterWithValueArg{expect: e.expect, target: e.target}
-//}
+import (
+	"github.com/dave/jennifer/jen"
+	genlib "nhatp.com/go/gen-lib"
+)
+
+func targetMethodExpecterReturnCode(receiverName, receiverType, targetMethodReturnStruct string, returns []VarInfo) jen.Code {
+	var params []jen.Code
+	var values []jen.Code
+	for _, v := range returns {
+		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		values = append(values, jen.Id(v.Field).Op(":").Id(v.Name))
+	}
+
+	return jen.Func().
+		Params(jen.Id(receiverName).Op("*").Id(receiverType)).
+		Id("Return").
+		Params(params...).
+		Block(
+			jen.Id(receiverName).Dot("expect").Dot("returns").Op("=").Id(targetMethodReturnStruct).Values(values...),
+		).
+		Line()
+}
+
+type MethodExpecterData struct {
+	TargetMethodExpectStruct           string
+	TargetMethodExpecterStruct         string
+	TargetMethodExpecterMatchStruct    string
+	TargetMethodExpecterMatchArgStruct string
+	TargetMethodExpecterValueStruct    string
+	TargetMethodExpecterValueArgStruct string
+	TargetMethodStruct                 string
+	TargetMethodReturnStruct           string
+	Arguments                          []VarInfo
+	Returns                            []VarInfo
+	Lib                                LibraryData
+	SkipExpect                         bool
+}
+
+func (d *MethodExpecterData) structCode() jen.Code {
+	fields := []jen.Code{
+		jen.Id("expect").Op("*").Id(d.TargetMethodExpectStruct),
+	}
+	if len(d.Arguments) > 0 {
+		fields = append(fields, jen.Id("target").Op("*").Id(d.TargetMethodStruct))
+	}
+	return jen.Type().Id(d.TargetMethodExpecterStruct).Struct(fields...).Line()
+}
+
+func (d *MethodExpecterData) matchFuncCode(receiver string) jen.Code {
+	var signature = targetMethodMatcherSignature(d.Arguments...)
+
+	return jen.Func().
+		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodExpecterStruct)).
+		Id("Match").Params(jen.Id("matcher").Add(signature)).
+		Op("*").Id(d.TargetMethodExpecterMatchStruct).
+		Block(
+			jen.If(jen.Id("matcher").Op("==").Nil()).Block(
+				jen.Id(receiver).Dot("expect").Dot("tb").Dot("Helper").Call(),
+				jen.Id(receiver).Dot("target").Dot("fatal").Call(
+					jen.Id(receiver).Dot("expect").Dot("index"),
+					jen.Id(d.Lib.MessageMatchByNilFunc).Call(jen.Id(receiver).Dot("target")),
+				),
+			),
+			jen.Line(),
+			jen.Id(receiver).Dot("expect").Dot("match").Op("=").Id("matcher"),
+			jen.Id(receiver).Dot("expect").Dot("matchLocation").Op("=").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(2)),
+			jen.Return(
+				jen.Op("&").Id(d.TargetMethodExpecterMatchStruct).Values(
+					jen.Id("expect").Op(":").Id(receiver).Dot("expect"),
+				),
+			),
+		).Line()
+}
+
+func (d *MethodExpecterData) withFuncCode(receiver string) jen.Code {
+	var params, body []jen.Code
+	for _, v := range d.Arguments {
+		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+
+		fn := "With" + toPascalCase(v.Name)
+
+		body = append(body, jen.Id(receiver).Dot(fn).Call(jen.Id(v.Name)))
+		body = append(body,
+			jen.Id(receiver).Dot("expect").Dot("matcherLocations").
+				Index(jen.Lit(v.Name)).Op("=").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(2)),
+		)
+		body = append(body, jen.Line())
+	}
+
+	body = append(body, jen.Return(
+		jen.Op("&").Id(d.TargetMethodExpecterValueStruct).Values(
+			jen.Id("expect").Op(":").Id(receiver).Dot("expect"),
+		),
+	))
+
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodExpecterStruct)).
+		Id("With").Params(params...).Op("*").Id(d.TargetMethodExpecterValueStruct).
+		Block(body...).Line()
+}
+
+func (d *MethodExpecterData) argumentFuncCode(receiver string, nextStruct string, fn func(string) jen.Code) []jen.Code {
+	if len(d.Arguments) == 0 {
+		return nil
+	}
+
+	var code []jen.Code
+	code = append(code, fn(receiver))
+
+	for _, arg := range d.Arguments {
+		matchReturnCode := jen.Op("&").Id(nextStruct).Values(
+			jen.Id("expect").Op(":").Id("e").Dot("expect"),
+			jen.Id("target").Op(":").Id("e").Dot("target"),
+		)
+		code = append(code, targetMethodExpecterMatchArgCode(
+			receiver, nextStruct, matchReturnCode, nextStruct, &d.Lib, arg, false,
+		))
+	}
+	return code
+}
+
+func (d *MethodExpecterData) GenerateCode() []jen.Code {
+	if d.SkipExpect || (len(d.Arguments) == 0 && len(d.Returns) == 0) {
+		return nil
+	}
+
+	nm := genlib.NewNameManager("e", nil)
+	for _, v := range d.Returns {
+		nm.Reserve(v.Name)
+	}
+	for _, v := range d.Arguments {
+		nm.Reserve(v.Name)
+	}
+	receiver := nm.Request("e")
+
+	code := []jen.Code{
+		d.structCode(),
+	}
+
+	if len(d.Returns) > 0 {
+		code = append(code, targetMethodExpecterReturnCode(
+			receiver, d.TargetMethodExpecterStruct, d.TargetMethodReturnStruct, d.Returns,
+		))
+	}
+
+	code = append(code, d.argumentFuncCode(receiver, d.TargetMethodExpecterMatchArgStruct, d.matchFuncCode)...)
+	code = append(code, d.argumentFuncCode(receiver, d.TargetMethodExpecterValueArgStruct, d.withFuncCode)...)
+	return code
+}

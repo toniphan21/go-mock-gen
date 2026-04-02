@@ -1169,6 +1169,10 @@ type targetMethodArgument struct {
 	Input string
 }
 
+type targetMethodArgumentMatcher struct {
+	Input func(m string) bool
+}
+
 type targetMethodReturn struct {
 	First string
 	Error error
