@@ -6,27 +6,27 @@ import (
 )
 
 type MethodData struct {
-	TargetMethodStruct                string
-	TargetMethodCallStruct            string
-	TargetMethodArgumentStruct        string
-	TargetMethodArgumentMatcherStruct string
-	TargetMethodReturnStruct          string
-	TargetMethodExpectStruct          string
-	Interface                         string
-	Name                              string
-	Arguments                         []VarInfo
-	Returns                           []VarInfo
-	Lib                               LibraryData
-	SkipExpect                        bool
+	Struct                string
+	CallStruct            string
+	ArgumentStruct        string
+	ArgumentMatcherStruct string
+	ReturnStruct          string
+	ExpectStruct          string
+	Interface             string
+	Name                  string
+	Arguments             []VarInfo
+	Returns               []VarInfo
+	Lib                   LibraryData
+	SkipExpect            bool
 }
 
 func (d *MethodData) structCode() jen.Code {
-	return jen.Type().Id(d.TargetMethodStruct).StructFunc(func(g *jen.Group) {
-		g.Id("Calls").Index().Id(d.TargetMethodCallStruct)
+	return jen.Type().Id(d.Struct).StructFunc(func(g *jen.Group) {
+		g.Id("Calls").Index().Id(d.CallStruct)
 		g.Id("stub").Add(targetMethodSignature(d.Arguments, d.Returns))
 		g.Id("stubLocation").String()
 		if !d.SkipExpect {
-			g.Id("expects").Index().Op("*").Id(d.TargetMethodExpectStruct)
+			g.Id("expects").Index().Op("*").Id(d.ExpectStruct)
 			g.Id("verified").Bool()
 		}
 	}).Line()
@@ -34,14 +34,14 @@ func (d *MethodData) structCode() jen.Code {
 
 func (d *MethodData) methodNameFuncCode(receiver string) jen.Code {
 	return jen.Func().
-		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("methodName").Params().String().
 		Block(jen.Return(jen.Lit(d.Name))).Line()
 }
 
 func (d *MethodData) interfaceNameFuncCode(receiver string) jen.Code {
 	return jen.Func().
-		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+		Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("interfaceName").Params().String().
 		Block(jen.Return(jen.Lit(d.Interface))).Line()
 }
@@ -56,7 +56,7 @@ func (d *MethodData) fatalFuncCode(receiver string) jen.Code {
 		)
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("fatal").
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).Id("fatal").
 		Params(jen.Id("index").Int(), jen.Id("msg").String()).
 		Block(body...).Line()
 }
@@ -68,7 +68,7 @@ func (d *MethodData) panicFuncCode(receiver string) jen.Code {
 	}
 	body = append(body, jen.Panic(jen.Id("msg")))
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("panic").
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).Id("panic").
 		Params(jen.Id("msg").String()).
 		Block(body...).Line()
 }
@@ -109,7 +109,7 @@ func (d *MethodData) buildCallHistoryFuncCode(receiver string) jen.Code {
 		}
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).Id("buildCallHistory").
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).Id("buildCallHistory").
 		Params(
 			jen.Id("sb").Op("*").Qual("strings", "Builder"),
 			jen.Id("header").String(),
@@ -147,19 +147,19 @@ func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
 	}
 
 	if len(d.Arguments) > 0 {
-		captureArgs = append(captureArgs, jen.Id(d.TargetMethodArgumentStruct).Values(argumentFields...))
+		captureArgs = append(captureArgs, jen.Id(d.ArgumentStruct).Values(argumentFields...))
 	}
 
 	if len(d.Returns) == 0 {
 		body = append(body, jen.Id(receiver).Dot("stub").Call(passed...))
 		body = append(body, jen.Id(receiver).Dot("capture").Call(captureArgs...))
 	} else {
-		captureArgs = append(captureArgs, jen.Id(d.TargetMethodReturnStruct).Values(returnFields...))
+		captureArgs = append(captureArgs, jen.Id(d.ReturnStruct).Values(returnFields...))
 		body = append(body, jen.List(vars...).Op(":=").Id(receiver).Dot("stub").Call(passed...))
 		body = append(body, jen.Return(jen.Id(receiver).Dot("capture").Call(captureArgs...)))
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("invokeStub").
 		Params(params...).Params(results...).
 		Block(body...).Line()
@@ -207,24 +207,28 @@ func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
 				),
 			),
 		).Line(),
+	}
 
-		jen.Id(vExpect).Op(":=").Id(receiver).Dot("expects").Index(jen.Id(vIndex)),
-		jen.If(
-			jen.Id(vExpect).Dot("match").Op("!=").Nil().Op("&&").
-				Op("!").Id(vExpect).Dot("match").Call(argIds...),
-		).Block(
-			jen.Id(vExpect).Dot("tb").Dot("Helper").Call(),
-			jen.Id(receiver).Dot("fatal").Call(
-				jen.Id(vIndex),
-				jen.Id(d.Lib.MessageMatchFailFunc).Call(
-					jen.Id(receiver), jen.Id(vExpect).Dot("matchLocation"), jen.Id(vIndex), jen.Id(vArgs),
-				),
-			),
-		).Line(),
+	if len(d.Arguments) > 0 || len(d.Returns) > 0 {
+		body = append(body, jen.Id(vExpect).Op(":=").Id(receiver).Dot("expects").Index(jen.Id(vIndex)))
 	}
 
 	if len(d.Arguments) > 0 {
-		body = append(body, jen.Id(vExpect).Dot("tb").Dot("Helper").Call())
+		body = append(body,
+			jen.If(
+				jen.Id(vExpect).Dot("match").Op("!=").Nil().Op("&&").
+					Op("!").Id(vExpect).Dot("match").Call(argIds...),
+			).Block(
+				jen.Id(vExpect).Dot("tb").Dot("Helper").Call(),
+				jen.Id(receiver).Dot("fatal").Call(
+					jen.Id(vIndex),
+					jen.Id(d.Lib.MessageMatchFailFunc).Call(
+						jen.Id(receiver), jen.Id(vExpect).Dot("matchLocation"), jen.Id(vIndex), jen.Id(vArgs),
+					),
+				),
+			).Line(),
+			jen.Id(vExpect).Dot("tb").Dot("Helper").Call(),
+		)
 	}
 
 	var argFields []jen.Code
@@ -252,17 +256,17 @@ func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
 
 	var captureArgs []jen.Code
 	if len(d.Arguments) > 0 {
-		captureArgs = append(captureArgs, jen.Id(d.TargetMethodArgumentStruct).Values(argFields...))
+		captureArgs = append(captureArgs, jen.Id(d.ArgumentStruct).Values(argFields...))
 	}
 
 	if len(d.Returns) == 0 {
 		body = append(body, jen.Id(receiver).Dot("capture").Call(captureArgs...))
 	} else {
-		captureArgs = append(captureArgs, jen.Id("expect").Dot("returns"))
+		captureArgs = append(captureArgs, jen.Id(vExpect).Dot("returns"))
 		body = append(body, jen.Return(jen.Id(receiver).Dot("capture").Call(captureArgs...)))
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("invokeExpect").Params(params...).Params(results...).
 		Block(body...).Line()
 }
@@ -281,19 +285,19 @@ func (d *MethodData) captureFuncCode(receiver string) jen.Code {
 
 	callFields = append(callFields, jen.Id("Location").Op(":").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(4)))
 	if len(d.Arguments) > 0 {
-		params = append(params, jen.Id("args").Id(d.TargetMethodArgumentStruct))
+		params = append(params, jen.Id("args").Id(d.ArgumentStruct))
 		callFields = append(callFields, jen.Id("Argument").Op(":").Id("args"))
 	}
 
 	if len(d.Returns) > 0 {
-		params = append(params, jen.Id("returns").Id(d.TargetMethodReturnStruct))
+		params = append(params, jen.Id("returns").Id(d.ReturnStruct))
 		callFields = append(callFields, jen.Id("Return").Op(":").Id("returns"))
 	}
 
 	body := []jen.Code{
 		jen.Id(receiver).Dot("Calls").Op("=").Append(
 			jen.Id(receiver).Dot("Calls"),
-			jen.Id(d.TargetMethodCallStruct).Values(callFields...),
+			jen.Id(d.CallStruct).Values(callFields...),
 		),
 	}
 
@@ -301,7 +305,7 @@ func (d *MethodData) captureFuncCode(receiver string) jen.Code {
 		body = append(body, jen.Return(returns...))
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("capture").Params(params...).Params(results...).
 		Block(body...).Line()
 }
@@ -311,7 +315,7 @@ func (d *MethodData) verifyFuncCode(receiver string) jen.Code {
 		return nil
 	}
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodStruct)).
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id("verify").Params(jen.Id("index").Int()).
 		Block(jen.If(
 			jen.Op("!").Id(receiver).Dot("verified").
@@ -331,15 +335,15 @@ func (d *MethodData) verifyFuncCode(receiver string) jen.Code {
 }
 
 func (d *MethodData) callStructCode() jen.Code {
-	return jen.Type().Id(d.TargetMethodCallStruct).StructFunc(func(g *jen.Group) {
+	return jen.Type().Id(d.CallStruct).StructFunc(func(g *jen.Group) {
 		g.Id("Location").String()
 
 		if len(d.Arguments) > 0 {
-			g.Id("Argument").Id(d.TargetMethodArgumentStruct)
+			g.Id("Argument").Id(d.ArgumentStruct)
 		}
 
 		if len(d.Returns) > 0 {
-			g.Id("Return").Id(d.TargetMethodReturnStruct)
+			g.Id("Return").Id(d.ReturnStruct)
 		}
 	}).Line()
 }
@@ -349,7 +353,7 @@ func (d *MethodData) argumentStructCode() jen.Code {
 		return nil
 	}
 
-	return jen.Type().Id(d.TargetMethodArgumentStruct).StructFunc(func(g *jen.Group) {
+	return jen.Type().Id(d.ArgumentStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Arguments {
 			g.Id(v.Field).Add(genlib.TypeToJenCode(v.Type))
 		}
@@ -361,7 +365,7 @@ func (d *MethodData) argumentMatcherStructCode() jen.Code {
 		return nil
 	}
 
-	return jen.Type().Id(d.TargetMethodArgumentMatcherStruct).StructFunc(func(g *jen.Group) {
+	return jen.Type().Id(d.ArgumentMatcherStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Arguments {
 			g.Id(v.Field).Add(targetMethodMatcherSignature(v))
 		}
@@ -373,7 +377,7 @@ func (d *MethodData) returnStructCode() jen.Code {
 		return nil
 	}
 
-	return jen.Type().Id(d.TargetMethodReturnStruct).StructFunc(func(g *jen.Group) {
+	return jen.Type().Id(d.ReturnStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Returns {
 			g.Id(v.Field).Add(genlib.TypeToJenCode(v.Type))
 		}
@@ -385,11 +389,11 @@ func (d *MethodData) expectStructCode() jen.Code {
 		return nil
 	}
 
-	return jen.Type().Id(d.TargetMethodExpectStruct).StructFunc(func(g *jen.Group) {
+	return jen.Type().Id(d.ExpectStruct).StructFunc(func(g *jen.Group) {
 		if len(d.Arguments) > 0 {
 			g.Id("match").Add(targetMethodMatcherSignature(d.Arguments...))
 			g.Id("matchLocation").String()
-			g.Id("matcher").Op("*").Id(d.TargetMethodArgumentMatcherStruct)
+			g.Id("matcher").Op("*").Id(d.ArgumentMatcherStruct)
 			g.Id("matcherWants").Map(jen.String()).Any()
 			g.Id("matcherMethods").Map(jen.String()).String()
 			g.Id("matcherHints").Map(jen.String()).String()
@@ -397,7 +401,7 @@ func (d *MethodData) expectStructCode() jen.Code {
 		}
 
 		if len(d.Returns) > 0 {
-			g.Id("returns").Id(d.TargetMethodReturnStruct)
+			g.Id("returns").Id(d.ReturnStruct)
 		}
 
 		g.Id("location").String()

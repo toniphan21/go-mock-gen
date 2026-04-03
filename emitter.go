@@ -21,10 +21,20 @@ type VarInfo struct {
 }
 
 type MethodInfo struct {
-	Name      string
-	Struct    string
-	Arguments []VarInfo
-	Returns   []VarInfo
+	Name                   string
+	Struct                 string
+	CallStruct             string
+	ArgumentStruct         string
+	ReturnStruct           string
+	ArgumentMatcherStruct  string
+	ExpectStruct           string
+	ExpecterStruct         string
+	ExpecterMatchStruct    string
+	ExpecterMatchArgStruct string
+	ExpecterValueStruct    string
+	ExpecterValueArgStruct string
+	Arguments              []VarInfo
+	Returns                []VarInfo
 }
 
 func targetMethodSignatureString(method MethodInfo) string {
@@ -101,3 +111,63 @@ func targetMethodMatcherSignature(args ...VarInfo) jen.Code {
 	}
 	return jen.Func().Params(params...).Params(jen.Bool())
 }
+
+// ---
+
+type Emitter interface {
+	Library(ctx genlib.EmitterContext, data LibraryData) []jen.Code
+	Target(ctx EmitterContext, data TargetData) []jen.Code
+	Stubber(ctx genlib.EmitterContext, data TargetStubberData) []jen.Code
+	Expecter(ctx genlib.EmitterContext, data TargetExpecterData) []jen.Code
+	Method(ctx genlib.EmitterContext, data MethodData) []jen.Code
+	MethodExpecter(ctx genlib.EmitterContext, data MethodExpecterData) []jen.Code
+	MethodExpecterMatch(ctx genlib.EmitterContext, data MethodExpecterMatchData) []jen.Code
+	MethodExpecterMatchArg(ctx genlib.EmitterContext, data MethodExpecterMatchArgData) []jen.Code
+	MethodExpecterValue(ctx genlib.EmitterContext, data MethodExpecterValueData) []jen.Code
+	MethodExpecterValueArg(ctx genlib.EmitterContext, data MethodExpecterValueArgData) []jen.Code
+}
+
+type DefaultEmitter struct {
+}
+
+func (e *DefaultEmitter) Library(ctx genlib.EmitterContext, data LibraryData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) Target(ctx EmitterContext, data TargetData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) Stubber(ctx genlib.EmitterContext, data TargetStubberData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) Expecter(ctx genlib.EmitterContext, data TargetExpecterData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) Method(ctx genlib.EmitterContext, data MethodData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) MethodExpecter(ctx genlib.EmitterContext, data MethodExpecterData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) MethodExpecterMatch(ctx genlib.EmitterContext, data MethodExpecterMatchData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) MethodExpecterMatchArg(ctx genlib.EmitterContext, data MethodExpecterMatchArgData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) MethodExpecterValue(ctx genlib.EmitterContext, data MethodExpecterValueData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) MethodExpecterValueArg(ctx genlib.EmitterContext, data MethodExpecterValueArgData) []jen.Code {
+	return data.GenerateCode()
+}
+
+var _ Emitter = (*DefaultEmitter)(nil)

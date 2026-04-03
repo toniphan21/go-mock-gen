@@ -5,17 +5,17 @@ import (
 )
 
 type TargetStubberData struct {
-	TargetStruct           string
-	TargetStubberStruct    string
-	TargetTestDoubleStruct string
-	Methods                []MethodInfo
-	Lib                    LibraryData
-	SkipExpect             bool
+	Struct           string
+	StubberStruct    string
+	TestDoubleStruct string
+	Methods          []MethodInfo
+	Lib              LibraryData
+	SkipExpect       bool
 }
 
 func (d *TargetStubberData) targetStubberStructCode() jen.Code {
-	return jen.Type().Id(d.TargetStubberStruct).Struct(
-		jen.Id("target").Op("*").Id(d.TargetStruct),
+	return jen.Type().Id(d.StubberStruct).Struct(
+		jen.Id("target").Op("*").Id(d.Struct),
 	).Line()
 }
 
@@ -25,7 +25,7 @@ func (d *TargetStubberData) stubCode(receiver string, method MethodInfo) jen.Cod
 	body := []jen.Code{
 		jen.If(jen.Id(receiver).Dot("target").Dot("td").Op("==").Nil()).
 			Block(jen.Id(receiver).Dot("target").Dot("td").Op("=").
-				Op("&").Id(d.TargetTestDoubleStruct).Values()).Line(),
+				Op("&").Id(d.TestDoubleStruct).Values()).Line(),
 
 		jen.Id(vSpy).Op(":=").Id(receiver).Dot("target").Dot("td").Dot(method.Name),
 
@@ -74,11 +74,11 @@ func (d *TargetStubberData) stubCode(receiver string, method MethodInfo) jen.Cod
 	)
 
 	return jen.Func().
-		Params(jen.Id(receiver).Op("*").Id(d.TargetStubberStruct)).
+		Params(jen.Id(receiver).Op("*").Id(d.StubberStruct)).
 		Id(method.Name).
 		Params(jen.Id("stub").Add(targetMethodSignature(method.Arguments, method.Returns))).
 		Op("*").Id(method.Struct).
-		Block(body...)
+		Block(body...).Line()
 }
 
 func (d *TargetStubberData) GenerateCode() []jen.Code {

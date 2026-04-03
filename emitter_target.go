@@ -6,22 +6,25 @@ import (
 )
 
 type TargetData struct {
-	Interface              string
-	TargetStruct           string
-	TargetConstructor      string
-	TargetTestDoubleStruct string
-	TargetStubberStruct    string
-	TargetExpecterStruct   string
-	Methods                []MethodInfo
-	Lib                    LibraryData
-	SkipExpect             bool
+	Interface        string
+	Struct           string
+	Constructor      string
+	TestDoubleStruct string
+	StubberStruct    string
+	ExpecterStruct   string
+	Methods          []MethodInfo
+	Lib              LibraryData
+	SkipExpect       bool
 }
 
 func (d *TargetData) constructorCode(location string) jen.Code {
-	return jen.Func().Id(d.TargetConstructor).Params().Op("*").Id(d.TargetStruct).Block(
+	if d.Constructor == "" {
+		return nil
+	}
+	return jen.Func().Id(d.Constructor).Params().Op("*").Id(d.Struct).Block(
 		jen.Return(
-			jen.Op("&").Id(d.TargetStruct).Values(
-				jen.Id("td").Op(":").Op("&").Id(d.TargetTestDoubleStruct).Values(
+			jen.Op("&").Id(d.Struct).Values(
+				jen.Id("td").Op(":").Op("&").Id(d.TestDoubleStruct).Values(
 					jen.Id(location).Op(":").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(2)),
 				),
 			),
@@ -30,8 +33,8 @@ func (d *TargetData) constructorCode(location string) jen.Code {
 }
 
 func (d *TargetData) targetStructCode() jen.Code {
-	return jen.Type().Id(d.TargetStruct).Struct(
-		jen.Id("td").Op("*").Id(d.TargetTestDoubleStruct),
+	return jen.Type().Id(d.Struct).Struct(
+		jen.Id("td").Op("*").Id(d.TestDoubleStruct),
 	).Line()
 }
 
@@ -44,12 +47,12 @@ func (d *TargetData) testDoubleStructCode(location string) jen.Code {
 		fields = append(fields, jen.Id(v.Name).Op("*").Id(v.Struct))
 	}
 
-	return jen.Type().Id(d.TargetTestDoubleStruct).Struct(fields...).Line()
+	return jen.Type().Id(d.TestDoubleStruct).Struct(fields...).Line()
 }
 
 func (d *TargetData) targetBuiltinFuncCode(receiver, method, returnedType string) jen.Code {
 	return jen.Func().Params(
-		jen.Id(receiver).Op("*").Id(d.TargetStruct),
+		jen.Id(receiver).Op("*").Id(d.Struct),
 	).Id(method).Params().Op("*").Id(returnedType).Block(
 		jen.Return(
 			jen.Op("&").Id(returnedType).Values(
@@ -145,7 +148,7 @@ func (d *TargetData) implementationCode(receiver, location string, method Method
 	)))
 
 	return jen.Func().
-		Params(jen.Id(receiver).Op("*").Id(d.TargetStruct)).
+		Params(jen.Id(receiver).Op("*").Id(d.Struct)).
 		Id(method.Name).
 		Params(params...).Params(results...).Block(body...).
 		Line()
@@ -172,15 +175,19 @@ func (d *TargetData) GenerateCode() []jen.Code {
 	}
 	location := lnm.Request("location")
 
-	code := []jen.Code{
-		d.constructorCode(location),
-		d.testDoubleStructCode(location),
-		d.targetStructCode(),
-		d.targetBuiltinFuncCode(receiver, "STUB", d.TargetStubberStruct),
+	var code []jen.Code
+	if v := d.constructorCode(location); v != nil {
+		code = append(code, v)
 	}
 
+	code = append(code,
+		d.testDoubleStructCode(location),
+		d.targetStructCode(),
+		d.targetBuiltinFuncCode(receiver, "STUB", d.StubberStruct),
+	)
+
 	if !d.SkipExpect {
-		code = append(code, d.targetBuiltinFuncCode(receiver, "EXPECT", d.TargetExpecterStruct))
+		code = append(code, d.targetBuiltinFuncCode(receiver, "EXPECT", d.ExpecterStruct))
 	}
 
 	for _, method := range d.Methods {

@@ -7,7 +7,7 @@ import (
 	genlib "nhatp.com/go/gen-lib"
 )
 
-func targetMethodExpecterWithArgCode(receiverName, receiverType string, returnedCode jen.Code, returnedType string, lib *LibraryData, info VarInfo, checkNil bool) jen.Code {
+func targetMethodExpecterValueArgCode(receiverName, receiverType string, returnedCode jen.Code, returnedType string, lib *LibraryData, info VarInfo, checkNil bool) jen.Code {
 	fn := "With" + toPascalCase(info.Name)
 	matchFunc := lib.ReflectEqualMatcherFunc
 	matchMethod := "reflect.DeepEqual"
@@ -52,20 +52,20 @@ func targetMethodExpecterWithArgCode(receiverName, receiverType string, returned
 }
 
 type MethodExpecterValueArgData struct {
-	TargetMethodExpecterValueArgStruct string
-	TargetMethodExpectStruct           string
-	TargetMethodStruct                 string
-	TargetMethodReturnStruct           string
-	Arguments                          []VarInfo
-	Returns                            []VarInfo
-	Lib                                LibraryData
-	SkipExpect                         bool
+	ExpecterValueArgStruct string
+	ExpectStruct           string
+	Struct                 string
+	ReturnStruct           string
+	Arguments              []VarInfo
+	Returns                []VarInfo
+	Lib                    LibraryData
+	SkipExpect             bool
 }
 
 func (d *MethodExpecterValueArgData) structCode() jen.Code {
-	return jen.Type().Id(d.TargetMethodExpecterValueArgStruct).Struct(
-		jen.Id("expect").Op("*").Id(d.TargetMethodExpectStruct),
-		jen.Id("target").Op("*").Id(d.TargetMethodStruct),
+	return jen.Type().Id(d.ExpecterValueArgStruct).Struct(
+		jen.Id("expect").Op("*").Id(d.ExpectStruct),
+		jen.Id("target").Op("*").Id(d.Struct),
 	).Line()
 }
 
@@ -89,13 +89,13 @@ func (d *MethodExpecterValueArgData) GenerateCode() []jen.Code {
 
 	if len(d.Returns) > 0 {
 		code = append(code, targetMethodExpecterReturnCode(
-			receiver, d.TargetMethodExpecterValueArgStruct, d.TargetMethodReturnStruct, d.Returns,
+			receiver, d.ExpecterValueArgStruct, d.ReturnStruct, d.Returns,
 		))
 	}
 
 	for _, arg := range d.Arguments {
-		code = append(code, targetMethodExpecterWithArgCode(
-			receiver, d.TargetMethodExpecterValueArgStruct, jen.Id(receiver), d.TargetMethodExpecterValueArgStruct, &d.Lib, arg, true,
+		code = append(code, targetMethodExpecterValueArgCode(
+			receiver, d.ExpecterValueArgStruct, jen.Id(receiver), d.ExpecterValueArgStruct, &d.Lib, arg, true,
 		))
 	}
 	return code

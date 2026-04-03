@@ -313,12 +313,6 @@ func Test_MethodData_invokeExpectFuncCode(t *testing.T) {
 		x.panic(libMessageTooManyCalls(x, len(x.expects), v1+1, v0))
 	}
 
-	v2 := x.expects[v1]
-	if v2.match != nil && !v2.match() {
-		v2.tb.Helper()
-		x.fatal(v1, libMessageMatchFail(x, v2.matchLocation, v1, v0))
-	}
-
 	x.capture()
 }
 `,
@@ -336,12 +330,7 @@ func Test_MethodData_invokeExpectFuncCode(t *testing.T) {
 	}
 
 	v2 := x.expects[v1]
-	if v2.match != nil && !v2.match() {
-		v2.tb.Helper()
-		x.fatal(v1, libMessageMatchFail(x, v2.matchLocation, v1, v0))
-	}
-
-	return x.capture(expect.returns)
+	return x.capture(v2.returns)
 }
 `,
 		},
@@ -361,12 +350,7 @@ func Test_MethodData_invokeExpectFuncCode(t *testing.T) {
 	}
 
 	v2 := x.expects[v1]
-	if v2.match != nil && !v2.match() {
-		v2.tb.Helper()
-		x.fatal(v1, libMessageMatchFail(x, v2.matchLocation, v1, v0))
-	}
-
-	return x.capture(expect.returns)
+	return x.capture(v2.returns)
 }
 `,
 		},
@@ -420,7 +404,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 	libMatchArgument(x, v1, "ctx", ctx, v2.matcher.ctx, v2.matcherWants, v2.matcherMethods, v2.matcherHints, v2.tb, v2.matcherLocations["ctx"])
 	libMatchArgument(x, v1, "id", id, v2.matcher.id, v2.matcherWants, v2.matcherMethods, v2.matcherHints, v2.tb, v2.matcherLocations["id"])
 
-	return x.capture(targetMethodArgument{Ctx: ctx, ID: id}, expect.returns)
+	return x.capture(targetMethodArgument{Ctx: ctx, ID: id}, v2.returns)
 }
 `,
 		},
@@ -449,7 +433,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 	v2.tb.Helper()
 	libMatchArgument(x, v1, "input", input, v2.matcher.input, v2.matcherWants, v2.matcherMethods, v2.matcherHints, v2.tb, v2.matcherLocations["input"])
 
-	return x.capture(targetMethodArgument{Input: input}, expect.returns)
+	return x.capture(targetMethodArgument{Input: input}, v2.returns)
 }
 `,
 		},
@@ -478,7 +462,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 	v5.tb.Helper()
 	libMatchArgument(x, v4, "v0", v0, v5.matcher.v0, v5.matcherWants, v5.matcherMethods, v5.matcherHints, v5.tb, v5.matcherLocations["v0"])
 
-	return x.capture(targetMethodArgument{Input: v0}, expect.returns)
+	return x.capture(targetMethodArgument{Input: v0}, v5.returns)
 }
 `,
 		},
@@ -868,18 +852,18 @@ type targetMethodExpect struct {
 
 func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, skipExpect bool, fn func(data MethodData) jen.Code) string {
 	data := MethodData{
-		TargetMethodStruct:                "targetMethod",
-		TargetMethodCallStruct:            "targetMethodCall",
-		TargetMethodArgumentStruct:        "targetMethodArgument",
-		TargetMethodArgumentMatcherStruct: "targetMethodArgumentMatcher",
-		TargetMethodReturnStruct:          "targetMethodReturn",
-		TargetMethodExpectStruct:          "targetMethodExpect",
-		Interface:                         "Target",
-		Name:                              "Method",
-		Lib:                               libData(),
-		Arguments:                         arguments,
-		Returns:                           returns,
-		SkipExpect:                        skipExpect,
+		Struct:                "targetMethod",
+		CallStruct:            "targetMethodCall",
+		ArgumentStruct:        "targetMethodArgument",
+		ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+		ReturnStruct:          "targetMethodReturn",
+		ExpectStruct:          "targetMethodExpect",
+		Interface:             "Target",
+		Name:                  "Method",
+		Lib:                   libData(),
+		Arguments:             arguments,
+		Returns:               returns,
+		SkipExpect:            skipExpect,
 	}
 
 	code := fn(data)
@@ -902,15 +886,15 @@ func Test_MethodData_GenerateCode(t *testing.T) {
 		{
 			name: "no arguments, no returns",
 			data: MethodData{
-				TargetMethodStruct:                "targetMethod",
-				TargetMethodCallStruct:            "targetMethodCall",
-				TargetMethodArgumentStruct:        "targetMethodArgument",
-				TargetMethodArgumentMatcherStruct: "targetMethodArgumentMatcher",
-				TargetMethodReturnStruct:          "targetMethodReturn",
-				TargetMethodExpectStruct:          "targetMethodExpect",
-				Interface:                         "Target",
-				Name:                              "Method",
-				Lib:                               libData(),
+				Struct:                "targetMethod",
+				CallStruct:            "targetMethodCall",
+				ArgumentStruct:        "targetMethodArgument",
+				ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+				ReturnStruct:          "targetMethodReturn",
+				ExpectStruct:          "targetMethodExpect",
+				Interface:             "Target",
+				Name:                  "Method",
+				Lib:                   libData(),
 			},
 			expected: `package emitter
 
@@ -971,12 +955,6 @@ func (m *targetMethod) invokeExpect() {
 		m.panic(libMessageTooManyCalls(m, len(m.expects), v1+1, v0))
 	}
 
-	v2 := m.expects[v1]
-	if v2.match != nil && !v2.match() {
-		v2.tb.Helper()
-		m.fatal(v1, libMessageMatchFail(m, v2.matchLocation, v1, v0))
-	}
-
 	m.capture()
 }
 
@@ -1006,16 +984,16 @@ type targetMethodExpect struct {
 		{
 			name: "no arguments, no returns, skip expect",
 			data: MethodData{
-				TargetMethodStruct:                "targetMethod",
-				TargetMethodCallStruct:            "targetMethodCall",
-				TargetMethodArgumentStruct:        "targetMethodArgument",
-				TargetMethodArgumentMatcherStruct: "targetMethodArgumentMatcher",
-				TargetMethodReturnStruct:          "targetMethodReturn",
-				TargetMethodExpectStruct:          "targetMethodExpect",
-				Interface:                         "Target",
-				Name:                              "Method",
-				Lib:                               libData(),
-				SkipExpect:                        true,
+				Struct:                "targetMethod",
+				CallStruct:            "targetMethodCall",
+				ArgumentStruct:        "targetMethodArgument",
+				ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+				ReturnStruct:          "targetMethodReturn",
+				ExpectStruct:          "targetMethodExpect",
+				Interface:             "Target",
+				Name:                  "Method",
+				Lib:                   libData(),
+				SkipExpect:            true,
 			},
 			expected: `package emitter
 
@@ -1061,16 +1039,16 @@ type targetMethodCall struct {
 		{
 			name: "handle name collision",
 			data: MethodData{
-				TargetMethodStruct:                "targetMethod",
-				TargetMethodCallStruct:            "targetMethodCall",
-				TargetMethodArgumentStruct:        "targetMethodArgument",
-				TargetMethodArgumentMatcherStruct: "targetMethodArgumentMatcher",
-				TargetMethodReturnStruct:          "targetMethodReturn",
-				TargetMethodExpectStruct:          "targetMethodExpect",
-				Interface:                         "Target",
-				Name:                              "Method",
-				Lib:                               libData(),
-				Arguments:                         varInfos("Input: m string"),
+				Struct:                "targetMethod",
+				CallStruct:            "targetMethodCall",
+				ArgumentStruct:        "targetMethodArgument",
+				ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+				ReturnStruct:          "targetMethodReturn",
+				ExpectStruct:          "targetMethodExpect",
+				Interface:             "Target",
+				Name:                  "Method",
+				Lib:                   libData(),
+				Arguments:             varInfos("Input: m string"),
 				Returns: []VarInfo{
 					{Name: "first", Field: "First", OriginalName: "m0", Type: gentest.Type("string")},
 					{Name: "second", Field: "Error", OriginalName: "m1", Type: gentest.Type("error")},
@@ -1144,7 +1122,7 @@ func (m2 *targetMethod) invokeExpect(m string) (m0 string, m1 error) {
 	v2.tb.Helper()
 	libMatchArgument(m2, v1, "m", m, v2.matcher.m, v2.matcherWants, v2.matcherMethods, v2.matcherHints, v2.tb, v2.matcherLocations["m"])
 
-	return m2.capture(targetMethodArgument{Input: m}, expect.returns)
+	return m2.capture(targetMethodArgument{Input: m}, v2.returns)
 }
 
 func (m2 *targetMethod) capture(args targetMethodArgument, returns targetMethodReturn) (m0 string, m1 error) {

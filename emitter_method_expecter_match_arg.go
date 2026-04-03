@@ -55,20 +55,20 @@ func targetMethodExpecterMatchArgCode(receiverName, receiverType string, returne
 }
 
 type MethodExpecterMatchArgData struct {
-	TargetMethodExpecterMatchArgStruct string
-	TargetMethodExpectStruct           string
-	TargetMethodStruct                 string
-	TargetMethodReturnStruct           string
-	Arguments                          []VarInfo
-	Returns                            []VarInfo
-	Lib                                LibraryData
-	SkipExpect                         bool
+	ExpecterMatchArgStruct string
+	ExpectStruct           string
+	Struct                 string
+	ReturnStruct           string
+	Arguments              []VarInfo
+	Returns                []VarInfo
+	Lib                    LibraryData
+	SkipExpect             bool
 }
 
 func (d *MethodExpecterMatchArgData) structCode() jen.Code {
-	return jen.Type().Id(d.TargetMethodExpecterMatchArgStruct).Struct(
-		jen.Id("expect").Op("*").Id(d.TargetMethodExpectStruct),
-		jen.Id("target").Op("*").Id(d.TargetMethodStruct),
+	return jen.Type().Id(d.ExpecterMatchArgStruct).Struct(
+		jen.Id("expect").Op("*").Id(d.ExpectStruct),
+		jen.Id("target").Op("*").Id(d.Struct),
 	).Line()
 }
 
@@ -92,13 +92,13 @@ func (d *MethodExpecterMatchArgData) GenerateCode() []jen.Code {
 
 	if len(d.Returns) > 0 {
 		code = append(code, targetMethodExpecterReturnCode(
-			receiver, d.TargetMethodExpecterMatchArgStruct, d.TargetMethodReturnStruct, d.Returns,
+			receiver, d.ExpecterMatchArgStruct, d.ReturnStruct, d.Returns,
 		))
 	}
 
 	for _, arg := range d.Arguments {
 		code = append(code, targetMethodExpecterMatchArgCode(
-			receiver, d.TargetMethodExpecterMatchArgStruct, jen.Id(receiver), d.TargetMethodExpecterMatchArgStruct, &d.Lib, arg, true,
+			receiver, d.ExpecterMatchArgStruct, jen.Id(receiver), d.ExpecterMatchArgStruct, &d.Lib, arg, true,
 		))
 	}
 	return code

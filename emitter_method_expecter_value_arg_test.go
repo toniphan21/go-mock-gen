@@ -23,11 +23,11 @@ func Test_MethodExpecterValueArgData_GenerateCode(t *testing.T) {
 		{
 			name: "emit a definition and a function if there is an argument",
 			data: MethodExpecterValueArgData{
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				Lib:                                libData(),
-				Arguments:                          varInfos("name: name string"),
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				Lib:                    libData(),
+				Arguments:              varInfos("name: name string"),
 			},
 			expected: `package emitter
 
@@ -55,11 +55,11 @@ func (e *targetMethodExpecterWithValueArg) WithName(name string) *targetMethodEx
 		{
 			name: "emit code use reflect.DeepEqual if the type is not comparable",
 			data: MethodExpecterValueArgData{
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				Lib:                                libData(),
-				Arguments:                          varInfos("val: val map[string]int"),
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				Lib:                    libData(),
+				Arguments:              varInfos("val: val map[string]int"),
 			},
 			expected: `package emitter
 
@@ -87,13 +87,13 @@ func (e *targetMethodExpecterWithValueArg) WithVal(val map[string]int) *targetMe
 		{
 			name: "emit a Return function if Return is not empty",
 			data: MethodExpecterValueArgData{
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				Lib:                                libData(),
-				Arguments:                          varInfos("name: name string"),
-				Returns:                            varInfos("First: first *time.Time", "Second: second error"),
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				ReturnStruct:           "targetMethodReturn",
+				Lib:                    libData(),
+				Arguments:              varInfos("name: name string"),
+				Returns:                varInfos("First: first *time.Time", "Second: second error"),
 			},
 			expected: `package emitter
 
@@ -127,13 +127,13 @@ func (e *targetMethodExpecterWithValueArg) WithName(name string) *targetMethodEx
 		{
 			name: "emit different receiver name to avoid collision with param name",
 			data: MethodExpecterValueArgData{
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				Lib:                                libData(),
-				Arguments:                          varInfos("e: e string", "e0: e0 string"),
-				Returns:                            varInfos("e1: e1 string", "e2: e2 string"),
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				ReturnStruct:           "targetMethodReturn",
+				Lib:                    libData(),
+				Arguments:              varInfos("e: e string", "e0: e0 string"),
+				Returns:                varInfos("e1: e1 string", "e2: e2 string"),
 			},
 			expected: `package emitter
 

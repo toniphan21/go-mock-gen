@@ -19,10 +19,10 @@ func Test_TargetStubberData_GenerateCode(t *testing.T) {
 		{
 			name: "strip the expected if it is skipped",
 			data: TargetStubberData{
-				TargetStruct:           "target",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				Lib:                    libData(),
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
 						Name:   "Method",
@@ -65,10 +65,10 @@ func (s *targetStubber) Method(stub func()) *targetMethod {
 		{
 			name: "should handle correct signature",
 			data: TargetStubberData{
-				TargetStruct:           "target",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				Lib:                    libData(),
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
 						Name:      "Method",

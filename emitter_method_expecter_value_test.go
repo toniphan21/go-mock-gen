@@ -25,10 +25,10 @@ func Test_MethodExpecterValueData_GenerateCode(t *testing.T) {
 		{
 			name: "emit a struct with return syntax enforced code",
 			data: MethodExpecterValueData{
-				TargetMethodExpecterValueStruct: "targetMethodExpecterWithValue",
-				TargetMethodExpectStruct:        "targetMethodExpect",
-				TargetMethodReturnStruct:        "targetMethodReturn",
-				Returns:                         varInfos("First: first string", "Second: second error"),
+				ExpecterValueStruct: "targetMethodExpecterWithValue",
+				ExpectStruct:        "targetMethodExpect",
+				ReturnStruct:        "targetMethodReturn",
+				Returns:             varInfos("First: first string", "Second: second error"),
 			},
 			expected: `package emitter
 
@@ -45,10 +45,10 @@ func (e *targetMethodExpecterWithValue) Return(first string, second error) {
 		{
 			name: "emit a struct with receiver name aware about collision",
 			data: MethodExpecterValueData{
-				TargetMethodExpecterValueStruct: "targetMethodExpecterWithValue",
-				TargetMethodExpectStruct:        "targetMethodExpect",
-				TargetMethodReturnStruct:        "targetMethodReturn",
-				Returns:                         varInfos("e: e string", "e0: e0 error", "e1: e1 error"),
+				ExpecterValueStruct: "targetMethodExpecterWithValue",
+				ExpectStruct:        "targetMethodExpect",
+				ReturnStruct:        "targetMethodReturn",
+				Returns:             varInfos("e: e string", "e0: e0 error", "e1: e1 error"),
 			},
 			expected: `package emitter
 

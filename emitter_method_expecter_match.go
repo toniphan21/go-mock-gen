@@ -6,16 +6,16 @@ import (
 )
 
 type MethodExpecterMatchData struct {
-	TargetMethodExpecterMatchStruct string
-	TargetMethodExpectStruct        string
-	TargetMethodReturnStruct        string
-	Returns                         []VarInfo
-	SkipExpect                      bool
+	ExpecterMatchStruct string
+	ExpectStruct        string
+	ReturnStruct        string
+	Returns             []VarInfo
+	SkipExpect          bool
 }
 
 func (d *MethodExpecterMatchData) structCode() jen.Code {
-	return jen.Type().Id(d.TargetMethodExpecterMatchStruct).Struct(
-		jen.Id("expect").Op("*").Id(d.TargetMethodExpectStruct),
+	return jen.Type().Id(d.ExpecterMatchStruct).Struct(
+		jen.Id("expect").Op("*").Id(d.ExpectStruct),
 	)
 }
 
@@ -32,6 +32,6 @@ func (d *MethodExpecterMatchData) GenerateCode() []jen.Code {
 
 	return []jen.Code{
 		d.structCode(),
-		targetMethodExpecterReturnCode(receiver, d.TargetMethodExpecterMatchStruct, d.TargetMethodReturnStruct, d.Returns),
+		targetMethodExpecterReturnCode(receiver, d.ExpecterMatchStruct, d.ReturnStruct, d.Returns),
 	}
 }

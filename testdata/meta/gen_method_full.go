@@ -93,10 +93,12 @@ func (s *targetStubber) Full(stub func(ctx context.Context, input string) ([]Res
 	return spy
 }
 
+// done - TargetExpecterData.targetExpecterStructCode()
 type targetExpecter struct { // skip:!expect
 	target *target
 }
 
+// done - TargetExpecterData.expectCode()
 func (e *targetExpecter) Full(tb testing.TB) *targetFullExpecter { // skip:!expect
 	if e.target.td == nil {
 		e.target.td = &targetTestDouble{}

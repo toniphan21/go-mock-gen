@@ -21,15 +21,78 @@ func Test_TargetData_GenerateCode(t *testing.T) {
 		},
 
 		{
+			name: "skip constructor if it is empty",
+			data: TargetData{
+				Interface:        "Target",
+				Struct:           "target",
+				Constructor:      "",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
+				Methods: []MethodInfo{
+					{
+						Name:   "Method",
+						Struct: "targetMethod",
+					},
+				},
+			},
+			expected: `package emitter
+
+type targetTestDouble struct {
+	location string
+	Method   *targetMethod
+}
+
+type target struct {
+	td *targetTestDouble
+}
+
+func (m *target) STUB() *targetStubber {
+	return &targetStubber{target: m}
+}
+
+func (m *target) EXPECT() *targetExpecter {
+	return &targetExpecter{target: m}
+}
+
+func (m *target) Method() {
+	v0, v1, v2 := "Target", "Method", "()"
+	v3 := []any{}
+
+	if m.td == nil {
+		panic(libMessageNotImplemented(v0, v1, v2, "", v3))
+	}
+
+	if v4 := m.td.Method; v4 != nil {
+		switch {
+		case v4.stub != nil:
+			v4.invokeStub()
+			return
+		case len(v4.expects) > 0:
+			v5 := len(v4.Calls)
+			if v5 < len(v4.expects) {
+				v4.expects[v5].tb.Helper()
+			}
+			v4.invokeExpect()
+			return
+		}
+	}
+	panic(libMessageNotImplemented(v0, v1, v2, m.td.location, v3))
+}
+`,
+		},
+
+		{
 			name: "strip the expected if it is skipped",
 			data: TargetData{
-				Interface:              "Target",
-				TargetStruct:           "target",
-				TargetConstructor:      "testTarget",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				TargetExpecterStruct:   "targetExpecter",
-				Lib:                    libData(),
+				Interface:        "Target",
+				Struct:           "target",
+				Constructor:      "testTarget",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
 						Name:   "Method",
@@ -90,13 +153,13 @@ func (m *target) Method() {
 		{
 			name: "test double will choose other name if there is a method named 'location'",
 			data: TargetData{
-				Interface:              "Target",
-				TargetStruct:           "target",
-				TargetConstructor:      "testTarget",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				TargetExpecterStruct:   "targetExpecter",
-				Lib:                    libData(),
+				Interface:        "Target",
+				Struct:           "target",
+				Constructor:      "testTarget",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
 						Name:   "location",
@@ -157,13 +220,13 @@ func (m *target) location() {
 		{
 			name: "target can avoid receiver name collision",
 			data: TargetData{
-				Interface:              "Target",
-				TargetStruct:           "target",
-				TargetConstructor:      "testTarget",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				TargetExpecterStruct:   "targetExpecter",
-				Lib:                    libData(),
+				Interface:        "Target",
+				Struct:           "target",
+				Constructor:      "testTarget",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
 						Name:      "Method",
@@ -477,15 +540,15 @@ func (m *target) Method(ctx context.Context, input string) (err error) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			data := TargetData{
-				Interface:              "Target",
-				TargetStruct:           "target",
-				TargetConstructor:      "testTarget",
-				TargetTestDoubleStruct: "targetTestDouble",
-				TargetStubberStruct:    "targetStubber",
-				TargetExpecterStruct:   "targetExpecter",
-				Lib:                    libData(),
-				SkipExpect:             tc.skipExpect,
-				Methods:                []MethodInfo{tc.method},
+				Interface:        "Target",
+				Struct:           "target",
+				Constructor:      "testTarget",
+				TestDoubleStruct: "targetTestDouble",
+				StubberStruct:    "targetStubber",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
+				SkipExpect:       tc.skipExpect,
+				Methods:          []MethodInfo{tc.method},
 			}
 
 			code := data.implementationCode(tc.receiver, tc.location, tc.method)

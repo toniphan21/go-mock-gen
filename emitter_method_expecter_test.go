@@ -16,15 +16,15 @@ func Test_MethodExpecterData_GenerateCode(t *testing.T) {
 		{
 			name: "emit nothing if no arguments and no returns",
 			data: MethodExpecterData{
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodExpecterStruct:         "targetMethodExpecter",
-				TargetMethodExpecterMatchStruct:    "targetMethodExpecterMatch",
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodExpecterValueStruct:    "targetMethodExpecterWithValue",
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				Lib:                                libData(),
+				Struct:                 "targetMethod",
+				ReturnStruct:           "targetMethodReturn",
+				ExpectStruct:           "targetMethodExpect",
+				ExpecterStruct:         "targetMethodExpecter",
+				ExpecterMatchStruct:    "targetMethodExpecterMatch",
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				ExpecterValueStruct:    "targetMethodExpecterWithValue",
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Lib:                    libData(),
 			},
 			expected: ``,
 		},
@@ -32,16 +32,16 @@ func Test_MethodExpecterData_GenerateCode(t *testing.T) {
 		{
 			name: "emit definition, match and with if there is an argument",
 			data: MethodExpecterData{
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodExpecterStruct:         "targetMethodExpecter",
-				TargetMethodExpecterMatchStruct:    "targetMethodExpecterMatch",
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodExpecterValueStruct:    "targetMethodExpecterWithValue",
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				Lib:                                libData(),
-				Arguments:                          varInfos("name: name string"),
+				Struct:                 "targetMethod",
+				ReturnStruct:           "targetMethodReturn",
+				ExpectStruct:           "targetMethodExpect",
+				ExpecterStruct:         "targetMethodExpecter",
+				ExpecterMatchStruct:    "targetMethodExpecterMatch",
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				ExpecterValueStruct:    "targetMethodExpecterWithValue",
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Lib:                    libData(),
+				Arguments:              varInfos("name: name string"),
 			},
 			expected: `package emitter
 
@@ -61,7 +61,7 @@ func (e *targetMethodExpecter) Match(matcher func(name string) bool) *targetMeth
 	return &targetMethodExpecterMatch{expect: e.expect}
 }
 
-func (e *targetMethodExpecterWithMatchArg) MatchName(matcher func(name string) bool) *targetMethodExpecterWithMatchArg {
+func (e *targetMethodExpecter) MatchName(matcher func(name string) bool) *targetMethodExpecterWithMatchArg {
 	if matcher == nil {
 		e.expect.tb.Helper()
 		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchName"))
@@ -80,15 +80,12 @@ func (e *targetMethodExpecter) With(name string) *targetMethodExpecterWithValue 
 	return &targetMethodExpecterWithValue{expect: e.expect}
 }
 
-func (e *targetMethodExpecterWithValueArg) MatchName(matcher func(name string) bool) *targetMethodExpecterWithValueArg {
-	if matcher == nil {
-		e.expect.tb.Helper()
-		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchName"))
-	}
-
-	e.expect.matcher.name = matcher
+func (e *targetMethodExpecter) WithName(name string) *targetMethodExpecterWithValueArg {
+	e.expect.matcher.name = libBasicComparisonMatcher(name)
+	e.expect.matcherWants["name"] = name
+	e.expect.matcherMethods["name"] = "=="
 	e.expect.matcherLocations["name"] = libCallerLocation(2)
-	e.expect.matcherHints["name"] = libMessageMatchArgHint()
+
 	return &targetMethodExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 `,
@@ -97,16 +94,16 @@ func (e *targetMethodExpecterWithValueArg) MatchName(matcher func(name string) b
 		{
 			name: "emit definition, return if there is a return",
 			data: MethodExpecterData{
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodExpecterStruct:         "targetMethodExpecter",
-				TargetMethodExpecterMatchStruct:    "targetMethodExpecterMatch",
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodExpecterValueStruct:    "targetMethodExpecterWithValue",
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				Lib:                                libData(),
-				Returns:                            varInfos("First: first *time.Time", "Second: second error"),
+				Struct:                 "targetMethod",
+				ReturnStruct:           "targetMethodReturn",
+				ExpectStruct:           "targetMethodExpect",
+				ExpecterStruct:         "targetMethodExpecter",
+				ExpecterMatchStruct:    "targetMethodExpecterMatch",
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				ExpecterValueStruct:    "targetMethodExpecterWithValue",
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Lib:                    libData(),
+				Returns:                varInfos("First: first *time.Time", "Second: second error"),
 			},
 			expected: `package emitter
 
@@ -125,17 +122,17 @@ func (e *targetMethodExpecter) Return(first *time.Time, second error) {
 		{
 			name: "emit definition, return, match and with if there is an argument and return",
 			data: MethodExpecterData{
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodExpecterStruct:         "targetMethodExpecter",
-				TargetMethodExpecterMatchStruct:    "targetMethodExpecterMatch",
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodExpecterValueStruct:    "targetMethodExpecterWithValue",
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				Lib:                                libData(),
-				Arguments:                          varInfos("val: val map[string]int"),
-				Returns:                            varInfos("First: first error"),
+				Struct:                 "targetMethod",
+				ReturnStruct:           "targetMethodReturn",
+				ExpectStruct:           "targetMethodExpect",
+				ExpecterStruct:         "targetMethodExpecter",
+				ExpecterMatchStruct:    "targetMethodExpecterMatch",
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				ExpecterValueStruct:    "targetMethodExpecterWithValue",
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Lib:                    libData(),
+				Arguments:              varInfos("val: val map[string]int"),
+				Returns:                varInfos("First: first error"),
 			},
 			expected: `package emitter
 
@@ -159,7 +156,7 @@ func (e *targetMethodExpecter) Match(matcher func(val map[string]int) bool) *tar
 	return &targetMethodExpecterMatch{expect: e.expect}
 }
 
-func (e *targetMethodExpecterWithMatchArg) MatchVal(matcher func(val map[string]int) bool) *targetMethodExpecterWithMatchArg {
+func (e *targetMethodExpecter) MatchVal(matcher func(val map[string]int) bool) *targetMethodExpecterWithMatchArg {
 	if matcher == nil {
 		e.expect.tb.Helper()
 		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchVal"))
@@ -178,15 +175,12 @@ func (e *targetMethodExpecter) With(val map[string]int) *targetMethodExpecterWit
 	return &targetMethodExpecterWithValue{expect: e.expect}
 }
 
-func (e *targetMethodExpecterWithValueArg) MatchVal(matcher func(val map[string]int) bool) *targetMethodExpecterWithValueArg {
-	if matcher == nil {
-		e.expect.tb.Helper()
-		e.target.fatal(e.expect.index, libMessageMatchArgByNil(e.target, "MatchVal"))
-	}
-
-	e.expect.matcher.val = matcher
+func (e *targetMethodExpecter) WithVal(val map[string]int) *targetMethodExpecterWithValueArg {
+	e.expect.matcher.val = libReflectEqualMatcher(val)
+	e.expect.matcherWants["val"] = val
+	e.expect.matcherMethods["val"] = "reflect.DeepEqual"
 	e.expect.matcherLocations["val"] = libCallerLocation(2)
-	e.expect.matcherHints["val"] = libMessageMatchArgHint()
+
 	return &targetMethodExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 `,
@@ -195,17 +189,17 @@ func (e *targetMethodExpecterWithValueArg) MatchVal(matcher func(val map[string]
 		{
 			name: "emit different receiver name to avoid collision with param name",
 			data: MethodExpecterData{
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodExpecterStruct:         "targetMethodExpecter",
-				TargetMethodExpecterMatchStruct:    "targetMethodExpecterMatch",
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodExpecterValueStruct:    "targetMethodExpecterWithValue",
-				TargetMethodExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
-				Lib:                                libData(),
-				Arguments:                          varInfos("e: e string", "e0: e0 string"),
-				Returns:                            varInfos("e1: e1 string", "e2: e2 string"),
+				Struct:                 "targetMethod",
+				ReturnStruct:           "targetMethodReturn",
+				ExpectStruct:           "targetMethodExpect",
+				ExpecterStruct:         "targetMethodExpecter",
+				ExpecterMatchStruct:    "targetMethodExpecterMatch",
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				ExpecterValueStruct:    "targetMethodExpecterWithValue",
+				ExpecterValueArgStruct: "targetMethodExpecterWithValueArg",
+				Lib:                    libData(),
+				Arguments:              varInfos("e: e string", "e0: e0 string"),
+				Returns:                varInfos("e1: e1 string", "e2: e2 string"),
 			},
 			expected: `package emitter
 
@@ -229,7 +223,7 @@ func (e3 *targetMethodExpecter) Match(matcher func(e string, e0 string) bool) *t
 	return &targetMethodExpecterMatch{expect: e3.expect}
 }
 
-func (e3 *targetMethodExpecterWithMatchArg) MatchE(matcher func(e string) bool) *targetMethodExpecterWithMatchArg {
+func (e3 *targetMethodExpecter) MatchE(matcher func(e string) bool) *targetMethodExpecterWithMatchArg {
 	if matcher == nil {
 		e3.expect.tb.Helper()
 		e3.target.fatal(e3.expect.index, libMessageMatchArgByNil(e3.target, "MatchE"))
@@ -241,7 +235,7 @@ func (e3 *targetMethodExpecterWithMatchArg) MatchE(matcher func(e string) bool) 
 	return &targetMethodExpecterWithMatchArg{expect: e.expect, target: e.target}
 }
 
-func (e3 *targetMethodExpecterWithMatchArg) MatchE0(matcher func(e0 string) bool) *targetMethodExpecterWithMatchArg {
+func (e3 *targetMethodExpecter) MatchE0(matcher func(e0 string) bool) *targetMethodExpecterWithMatchArg {
 	if matcher == nil {
 		e3.expect.tb.Helper()
 		e3.target.fatal(e3.expect.index, libMessageMatchArgByNil(e3.target, "MatchE0"))
@@ -263,27 +257,21 @@ func (e3 *targetMethodExpecter) With(e string, e0 string) *targetMethodExpecterW
 	return &targetMethodExpecterWithValue{expect: e3.expect}
 }
 
-func (e3 *targetMethodExpecterWithValueArg) MatchE(matcher func(e string) bool) *targetMethodExpecterWithValueArg {
-	if matcher == nil {
-		e3.expect.tb.Helper()
-		e3.target.fatal(e3.expect.index, libMessageMatchArgByNil(e3.target, "MatchE"))
-	}
-
-	e3.expect.matcher.e = matcher
+func (e3 *targetMethodExpecter) WithE(e string) *targetMethodExpecterWithValueArg {
+	e3.expect.matcher.e = libBasicComparisonMatcher(e)
+	e3.expect.matcherWants["e"] = e
+	e3.expect.matcherMethods["e"] = "=="
 	e3.expect.matcherLocations["e"] = libCallerLocation(2)
-	e3.expect.matcherHints["e"] = libMessageMatchArgHint()
+
 	return &targetMethodExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 
-func (e3 *targetMethodExpecterWithValueArg) MatchE0(matcher func(e0 string) bool) *targetMethodExpecterWithValueArg {
-	if matcher == nil {
-		e3.expect.tb.Helper()
-		e3.target.fatal(e3.expect.index, libMessageMatchArgByNil(e3.target, "MatchE0"))
-	}
-
-	e3.expect.matcher.e0 = matcher
+func (e3 *targetMethodExpecter) WithE0(e0 string) *targetMethodExpecterWithValueArg {
+	e3.expect.matcher.e0 = libBasicComparisonMatcher(e0)
+	e3.expect.matcherWants["e0"] = e0
+	e3.expect.matcherMethods["e0"] = "=="
 	e3.expect.matcherLocations["e0"] = libCallerLocation(2)
-	e3.expect.matcherHints["e0"] = libMessageMatchArgHint()
+
 	return &targetMethodExpecterWithValueArg{expect: e.expect, target: e.target}
 }
 `,

@@ -21,11 +21,11 @@ func Test_MethodExpecterMatchArgData_GenerateCode(t *testing.T) {
 		{
 			name: "emit a definition and a function if there is an argument",
 			data: MethodExpecterMatchArgData{
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				Lib:                                libData(),
-				Arguments:                          varInfos("name: name string"),
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				Lib:                    libData(),
+				Arguments:              varInfos("name: name string"),
 			},
 			expected: `package emitter
 
@@ -56,13 +56,13 @@ func (e *targetMethodExpecterWithMatchArg) MatchName(matcher func(name string) b
 		{
 			name: "emit a Return function if Return is not empty",
 			data: MethodExpecterMatchArgData{
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				Lib:                                libData(),
-				Arguments:                          varInfos("name: name string"),
-				Returns:                            varInfos("First: first *time.Time", "Second: second error"),
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				ReturnStruct:           "targetMethodReturn",
+				Lib:                    libData(),
+				Arguments:              varInfos("name: name string"),
+				Returns:                varInfos("First: first *time.Time", "Second: second error"),
 			},
 			expected: `package emitter
 
@@ -99,13 +99,13 @@ func (e *targetMethodExpecterWithMatchArg) MatchName(matcher func(name string) b
 		{
 			name: "emit different receiver name to avoid collision with param name",
 			data: MethodExpecterMatchArgData{
-				TargetMethodExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
-				TargetMethodStruct:                 "targetMethod",
-				TargetMethodExpectStruct:           "targetMethodExpect",
-				TargetMethodReturnStruct:           "targetMethodReturn",
-				Lib:                                libData(),
-				Arguments:                          varInfos("e: e string", "e0: e0 string"),
-				Returns:                            varInfos("e1: e1 string", "e2: e2 string"),
+				ExpecterMatchArgStruct: "targetMethodExpecterWithMatchArg",
+				Struct:                 "targetMethod",
+				ExpectStruct:           "targetMethodExpect",
+				ReturnStruct:           "targetMethodReturn",
+				Lib:                    libData(),
+				Arguments:              varInfos("e: e string", "e0: e0 string"),
+				Returns:                varInfos("e1: e1 string", "e2: e2 string"),
 			},
 			expected: `package emitter
 

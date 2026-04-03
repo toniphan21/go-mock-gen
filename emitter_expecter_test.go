@@ -23,20 +23,19 @@ func Test_TargetExpecterData_GenerateCode(t *testing.T) {
 		},
 
 		{
-			name: "strip the expected if it is skipped",
+			name: "no arguments, no returns",
 			data: TargetExpecterData{
-				TargetStruct:                      "target",
-				TargetTestDoubleStruct:            "targetTestDouble",
-				TargetExpecterStruct:              "targetExpecter",
-				TargetMethodStruct:                "targetMethod",
-				TargetMethodExpectStruct:          "targetMethodExpect",
-				TargetMethodExpecterStruct:        "targetMethodExpecter",
-				TargetMethodArgumentMatcherStruct: "targetMethodArgumentMatcher",
-				Lib:                               libData(),
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
 				Methods: []MethodInfo{
 					{
-						Name:   "Method",
-						Struct: "targetMethod",
+						Name:                  "Method",
+						Struct:                "targetMethod",
+						ExpectStruct:          "targetMethodExpect",
+						ExpecterStruct:        "targetMethodExpecter",
+						ArgumentMatcherStruct: "targetMethodArgumentMatcher",
 					},
 				},
 			},
@@ -48,7 +47,7 @@ type targetExpecter struct {
 	target *target
 }
 
-func (e *targetExpecter) Method(tb testing.TB) *targetMethodExpecter {
+func (e *targetExpecter) Method(tb testing.TB) {
 	if e.target.td == nil {
 		e.target.td = &targetTestDouble{}
 	}
@@ -69,14 +68,9 @@ func (e *targetExpecter) Method(tb testing.TB) *targetMethodExpecter {
 
 	idx := len(m.expects)
 	m.expects = append(m.expects, &targetMethodExpect{
-		location:         libCallerLocation(2),
-		matcher:          &targetMethodArgumentMatcher{},
-		matcherWants:     make(map[string]any),
-		matcherMethods:   make(map[string]string),
-		matcherHints:     make(map[string]string),
-		matcherLocations: make(map[string]string),
-		index:            idx,
-		tb:               tb,
+		location: libCallerLocation(2),
+		index:    idx,
+		tb:       tb,
 	})
 
 	tb.Helper()
@@ -84,8 +78,186 @@ func (e *targetExpecter) Method(tb testing.TB) *targetMethodExpecter {
 		tb.Helper()
 		m.verify(idx)
 	})
+}
+`,
+		},
 
-	return &targetMethodExpecter{target: m, expect: m.expects[idx]}
+		{
+			name: "with arguments, no returns",
+			data: TargetExpecterData{
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
+				Methods: []MethodInfo{
+					{
+						Name:                  "Method",
+						Struct:                "targetMethod",
+						ExpectStruct:          "targetMethodExpect",
+						ExpecterStruct:        "targetMethodExpecter",
+						ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+					},
+				},
+			},
+			expected: `package emitter
+
+import "testing"
+
+type targetExpecter struct {
+	target *target
+}
+
+func (e *targetExpecter) Method(tb testing.TB) {
+	if e.target.td == nil {
+		e.target.td = &targetTestDouble{}
+	}
+
+	var m = e.target.td.Method
+	if m == nil {
+		m = &targetMethod{}
+		e.target.td.Method = m
+	}
+
+	if m.stub != nil {
+		m.panic(libMessageExpectAfterStub(m, m.stubLocation))
+	}
+
+	if tb == nil {
+		m.panic(libMessageExpectByNil(m))
+	}
+
+	idx := len(m.expects)
+	m.expects = append(m.expects, &targetMethodExpect{
+		location: libCallerLocation(2),
+		index:    idx,
+		tb:       tb,
+	})
+
+	tb.Helper()
+	tb.Cleanup(func() {
+		tb.Helper()
+		m.verify(idx)
+	})
+}
+`,
+		},
+
+		{
+			name: "no arguments, with returns",
+			data: TargetExpecterData{
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
+				Methods: []MethodInfo{
+					{
+						Name:                  "Method",
+						Struct:                "targetMethod",
+						ExpectStruct:          "targetMethodExpect",
+						ExpecterStruct:        "targetMethodExpecter",
+						ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+					},
+				},
+			},
+			expected: `package emitter
+
+import "testing"
+
+type targetExpecter struct {
+	target *target
+}
+
+func (e *targetExpecter) Method(tb testing.TB) {
+	if e.target.td == nil {
+		e.target.td = &targetTestDouble{}
+	}
+
+	var m = e.target.td.Method
+	if m == nil {
+		m = &targetMethod{}
+		e.target.td.Method = m
+	}
+
+	if m.stub != nil {
+		m.panic(libMessageExpectAfterStub(m, m.stubLocation))
+	}
+
+	if tb == nil {
+		m.panic(libMessageExpectByNil(m))
+	}
+
+	idx := len(m.expects)
+	m.expects = append(m.expects, &targetMethodExpect{
+		location: libCallerLocation(2),
+		index:    idx,
+		tb:       tb,
+	})
+
+	tb.Helper()
+	tb.Cleanup(func() {
+		tb.Helper()
+		m.verify(idx)
+	})
+}
+`,
+		},
+
+		{
+			name: "with arguments, with returns",
+			data: TargetExpecterData{
+				Struct:           "target",
+				TestDoubleStruct: "targetTestDouble",
+				ExpecterStruct:   "targetExpecter",
+				Lib:              libData(),
+				Methods: []MethodInfo{
+					{
+						Name:                  "Method",
+						Struct:                "targetMethod",
+						ExpectStruct:          "targetMethodExpect",
+						ExpecterStruct:        "targetMethodExpecter",
+						ArgumentMatcherStruct: "targetMethodArgumentMatcher",
+					},
+				},
+			},
+			expected: `package emitter
+
+import "testing"
+
+type targetExpecter struct {
+	target *target
+}
+
+func (e *targetExpecter) Method(tb testing.TB) {
+	if e.target.td == nil {
+		e.target.td = &targetTestDouble{}
+	}
+
+	var m = e.target.td.Method
+	if m == nil {
+		m = &targetMethod{}
+		e.target.td.Method = m
+	}
+
+	if m.stub != nil {
+		m.panic(libMessageExpectAfterStub(m, m.stubLocation))
+	}
+
+	if tb == nil {
+		m.panic(libMessageExpectByNil(m))
+	}
+
+	idx := len(m.expects)
+	m.expects = append(m.expects, &targetMethodExpect{
+		location: libCallerLocation(2),
+		index:    idx,
+		tb:       tb,
+	})
+
+	tb.Helper()
+	tb.Cleanup(func() {
+		tb.Helper()
+		m.verify(idx)
+	})
 }
 `,
 		},

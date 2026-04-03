@@ -24,37 +24,37 @@ func targetMethodExpecterReturnCode(receiverName, receiverType, targetMethodRetu
 }
 
 type MethodExpecterData struct {
-	TargetMethodExpectStruct           string
-	TargetMethodExpecterStruct         string
-	TargetMethodExpecterMatchStruct    string
-	TargetMethodExpecterMatchArgStruct string
-	TargetMethodExpecterValueStruct    string
-	TargetMethodExpecterValueArgStruct string
-	TargetMethodStruct                 string
-	TargetMethodReturnStruct           string
-	Arguments                          []VarInfo
-	Returns                            []VarInfo
-	Lib                                LibraryData
-	SkipExpect                         bool
+	ExpectStruct           string
+	ExpecterStruct         string
+	ExpecterMatchStruct    string
+	ExpecterMatchArgStruct string
+	ExpecterValueStruct    string
+	ExpecterValueArgStruct string
+	Struct                 string
+	ReturnStruct           string
+	Arguments              []VarInfo
+	Returns                []VarInfo
+	Lib                    LibraryData
+	SkipExpect             bool
 }
 
 func (d *MethodExpecterData) structCode() jen.Code {
 	fields := []jen.Code{
-		jen.Id("expect").Op("*").Id(d.TargetMethodExpectStruct),
+		jen.Id("expect").Op("*").Id(d.ExpectStruct),
 	}
 	if len(d.Arguments) > 0 {
-		fields = append(fields, jen.Id("target").Op("*").Id(d.TargetMethodStruct))
+		fields = append(fields, jen.Id("target").Op("*").Id(d.Struct))
 	}
-	return jen.Type().Id(d.TargetMethodExpecterStruct).Struct(fields...).Line()
+	return jen.Type().Id(d.ExpecterStruct).Struct(fields...).Line()
 }
 
 func (d *MethodExpecterData) matchFuncCode(receiver string) jen.Code {
 	var signature = targetMethodMatcherSignature(d.Arguments...)
 
 	return jen.Func().
-		Params(jen.Id(receiver).Op("*").Id(d.TargetMethodExpecterStruct)).
+		Params(jen.Id(receiver).Op("*").Id(d.ExpecterStruct)).
 		Id("Match").Params(jen.Id("matcher").Add(signature)).
-		Op("*").Id(d.TargetMethodExpecterMatchStruct).
+		Op("*").Id(d.ExpecterMatchStruct).
 		Block(
 			jen.If(jen.Id("matcher").Op("==").Nil()).Block(
 				jen.Id(receiver).Dot("expect").Dot("tb").Dot("Helper").Call(),
@@ -67,7 +67,7 @@ func (d *MethodExpecterData) matchFuncCode(receiver string) jen.Code {
 			jen.Id(receiver).Dot("expect").Dot("match").Op("=").Id("matcher"),
 			jen.Id(receiver).Dot("expect").Dot("matchLocation").Op("=").Id(d.Lib.CallerLocationFunc).Call(jen.Lit(2)),
 			jen.Return(
-				jen.Op("&").Id(d.TargetMethodExpecterMatchStruct).Values(
+				jen.Op("&").Id(d.ExpecterMatchStruct).Values(
 					jen.Id("expect").Op(":").Id(receiver).Dot("expect"),
 				),
 			),
@@ -90,34 +90,14 @@ func (d *MethodExpecterData) withFuncCode(receiver string) jen.Code {
 	}
 
 	body = append(body, jen.Return(
-		jen.Op("&").Id(d.TargetMethodExpecterValueStruct).Values(
+		jen.Op("&").Id(d.ExpecterValueStruct).Values(
 			jen.Id("expect").Op(":").Id(receiver).Dot("expect"),
 		),
 	))
 
-	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.TargetMethodExpecterStruct)).
-		Id("With").Params(params...).Op("*").Id(d.TargetMethodExpecterValueStruct).
+	return jen.Func().Params(jen.Id(receiver).Op("*").Id(d.ExpecterStruct)).
+		Id("With").Params(params...).Op("*").Id(d.ExpecterValueStruct).
 		Block(body...).Line()
-}
-
-func (d *MethodExpecterData) argumentFuncCode(receiver string, nextStruct string, fn func(string) jen.Code) []jen.Code {
-	if len(d.Arguments) == 0 {
-		return nil
-	}
-
-	var code []jen.Code
-	code = append(code, fn(receiver))
-
-	for _, arg := range d.Arguments {
-		matchReturnCode := jen.Op("&").Id(nextStruct).Values(
-			jen.Id("expect").Op(":").Id("e").Dot("expect"),
-			jen.Id("target").Op(":").Id("e").Dot("target"),
-		)
-		code = append(code, targetMethodExpecterMatchArgCode(
-			receiver, nextStruct, matchReturnCode, nextStruct, &d.Lib, arg, false,
-		))
-	}
-	return code
 }
 
 func (d *MethodExpecterData) GenerateCode() []jen.Code {
@@ -140,11 +120,32 @@ func (d *MethodExpecterData) GenerateCode() []jen.Code {
 
 	if len(d.Returns) > 0 {
 		code = append(code, targetMethodExpecterReturnCode(
-			receiver, d.TargetMethodExpecterStruct, d.TargetMethodReturnStruct, d.Returns,
+			receiver, d.ExpecterStruct, d.ReturnStruct, d.Returns,
 		))
 	}
 
-	code = append(code, d.argumentFuncCode(receiver, d.TargetMethodExpecterMatchArgStruct, d.matchFuncCode)...)
-	code = append(code, d.argumentFuncCode(receiver, d.TargetMethodExpecterValueArgStruct, d.withFuncCode)...)
+	if len(d.Arguments) > 0 {
+		code = append(code, d.matchFuncCode(receiver))
+		for _, arg := range d.Arguments {
+			returnCode := jen.Op("&").Id(d.ExpecterMatchArgStruct).Values(
+				jen.Id("expect").Op(":").Id("e").Dot("expect"),
+				jen.Id("target").Op(":").Id("e").Dot("target"),
+			)
+			code = append(code, targetMethodExpecterMatchArgCode(
+				receiver, d.ExpecterStruct, returnCode, d.ExpecterMatchArgStruct, &d.Lib, arg, false,
+			))
+		}
+
+		code = append(code, d.withFuncCode(receiver))
+		for _, arg := range d.Arguments {
+			returnCode := jen.Op("&").Id(d.ExpecterValueArgStruct).Values(
+				jen.Id("expect").Op(":").Id("e").Dot("expect"),
+				jen.Id("target").Op(":").Id("e").Dot("target"),
+			)
+			code = append(code, targetMethodExpecterValueArgCode(
+				receiver, d.ExpecterStruct, returnCode, d.ExpecterValueArgStruct, &d.Lib, arg, false,
+			))
+		}
+	}
 	return code
 }
