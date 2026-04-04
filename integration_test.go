@@ -18,7 +18,7 @@ func generateCodeForIntegrationTest(t *testing.T) {
 			},
 			InterfaceName: "Repository",
 		},
-	
+
 		{
 			PackagePath: "nhatp.com/go/mock-gen/testdata/integration",
 			Output: Output{
@@ -43,6 +43,10 @@ func generateCodeForIntegrationTest(t *testing.T) {
 	}
 
 	for _, v := range fm.Files() {
+		outer := filepath.Dir(v.FullPath)
+		err = os.MkdirAll(outer, 0755)
+		require.NoError(t, err)
+
 		err = os.WriteFile(v.FullPath, []byte(v.Content()), 0644)
 		require.NoError(t, err)
 	}

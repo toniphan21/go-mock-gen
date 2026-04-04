@@ -367,7 +367,7 @@ func (d *MethodData) argumentMatcherStructCode() jen.Code {
 
 	return jen.Type().Id(d.ArgumentMatcherStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Arguments {
-			g.Id(v.Field).Add(targetMethodMatcherSignature(v))
+			g.Id(v.Name).Add(targetMethodMatcherSignature(v))
 		}
 	}).Line()
 }

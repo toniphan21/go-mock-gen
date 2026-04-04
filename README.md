@@ -6,17 +6,13 @@ the Developer Experience.
 No `any`, no magic matchers. The API is designed so you can't do anything wrong - and when you do, it tells you exactly
 why, where, and how to fix it.
 
-Live Demo.
-
----
+image quick look
 
 ## Quick Usage
 
 ~~~bash
 go run nhatp.com/go/mock-gen/cmd/go-mock-gen -i Interface -o mock_interface_test.go
 ~~~
-
-See advanced usage with configuration file.
 
 ---
 

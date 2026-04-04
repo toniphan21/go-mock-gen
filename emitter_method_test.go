@@ -719,8 +719,8 @@ func Test_MethodData_argumentMatcherStructCode(t *testing.T) {
 			expected: `import "context"
 
 type targetMethodArgumentMatcher struct {
-	Ctx   func(ctx context.Context) bool
-	Input func(input string) bool
+	ctx   func(ctx context.Context) bool
+	input func(input string) bool
 }
 `,
 		},
@@ -1148,7 +1148,7 @@ type targetMethodArgument struct {
 }
 
 type targetMethodArgumentMatcher struct {
-	Input func(m string) bool
+	m func(m string) bool
 }
 
 type targetMethodReturn struct {

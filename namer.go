@@ -106,6 +106,10 @@ func (n *defaultNamer) Library() LibraryData {
 }
 
 func (n *defaultNamer) Constructor() string {
+	isExported := toPascalCase(n.structName) == n.structName
+	if isExported {
+		return fmt.Sprintf("New%s", n.interfaceName)
+	}
 	return fmt.Sprintf("test%s", n.interfaceName)
 }
 

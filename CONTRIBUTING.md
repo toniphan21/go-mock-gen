@@ -5,99 +5,160 @@ requirement before proceeding.*
 
 ## Contributing
 
-We welcome contributions! To maintain the reliability of the code generation logic, this project uses a custom
-Markdown-based Golden Test engine. 
+We welcome contributions! 
 
-Please read the **Running Tests** and **Markdown Golden Test Format** sections carefully; any bug report or feature
-request requires a Markdown file that makes the test fail.
+[//]: # (To maintain the reliability of the code generation logic, this project uses a custom)
 
-## Running Tests
+[//]: # (Markdown-based Golden Test engine. )
 
-Tests are stored in `features/*.md` or `testdata/*.md`. Use `features/*.md` if the test should be well-documented and is
-meant to be read as documentation. Use `testdata/*.md` if the test is purely technical.
+[//]: # (Please read the **Running Tests** and **Markdown Golden Test Format** sections carefully; any bug report or feature)
 
-You can execute the entire test suite or specific feature files using the `test` subcommand:
+[//]: # (request requires a Markdown file that makes the test fail.)
 
-```bash
-# Run all tests
-go run ./cmd/go-mock-gen test features/*.md testdata/*.md
+[//]: # (## Running Tests)
 
-# Run all tests with setup option printed
-go run ./cmd/go-mock-gen test features/*.md testdata/*.md -s
+[//]: # ()
+[//]: # (Tests are stored in `features/*.md` or `testdata/*.md`. Use `features/*.md` if the test should be well-documented and is)
 
-# Run a specific test file
-go run ./cmd/go-mock-gen test features/your-file.md
+[//]: # (meant to be read as documentation. Use `testdata/*.md` if the test is purely technical.)
 
-# Run a specific test case in a file
-go run ./cmd/go-mock-gen test features/your-file.md -n "name"
-```
+[//]: # ()
+[//]: # (You can execute the entire test suite or specific feature files using the `test` subcommand:)
 
-## Markdown Golden Test Format
+[//]: # ()
+[//]: # (```bash)
 
-Each Markdown file represents a test suite. Headers represent individual test cases, which can be nested to inherit
-context.
+[//]: # (# Run all tests)
 
-```md
-## Header of the test file
+[//]: # (go run ./cmd/go-mock-gen test features/*.md testdata/*.md)
 
-Description (will be shared with both test cases)
+[//]: # ()
+[//]: # (# Run all tests with setup option printed)
 
-...code-block shared with both test cases - more about code-block below...
+[//]: # (go run ./cmd/go-mock-gen test features/*.md testdata/*.md -s)
 
-### Test case one
+[//]: # ()
+[//]: # (# Run a specific test file)
 
-description for test case one
+[//]: # (go run ./cmd/go-mock-gen test features/your-file.md)
 
-...code-block of test case one...
+[//]: # ()
+[//]: # (# Run a specific test case in a file)
 
-### Test case two
+[//]: # (go run ./cmd/go-mock-gen test features/your-file.md -n "name")
 
-description for test case two
+[//]: # (```)
 
-...code-block of test case two...
-```
+[//]: # ()
+[//]: # (## Markdown Golden Test Format)
 
-code-block is just a normal Markdown code block format. The test engine treats `go.mod` and `go.sum` as special
-identifiers. For example, this code-block creates new `go.mod` file:
+[//]: # ()
+[//]: # (Each Markdown file represents a test suite. Headers represent individual test cases, which can be nested to inherit)
 
-````
-```go.mod
-put your go.mod file content here
-all direct dependencies are automatically installed
-```
-````
+[//]: # (context.)
 
-to declare a pkl file you use pkl and a comment `// file: <relative-path>` on top, for example:
+[//]: # ()
+[//]: # (```md)
 
-````
-```pkl
-// file: mock.pkl
-...put your pkl config content here...
-```
-````
+[//]: # (## Header of the test file)
 
-the same format applied for the source file:
+[//]: # ()
+[//]: # (Description &#40;will be shared with both test cases&#41;)
 
-````
-```go
-// file: input.go
-...put your input code here...
-```
-````
+[//]: # ()
+[//]: # (...code-block shared with both test cases - more about code-block below...)
 
-for the expected golden-file use `// golden-file: <relative-path>`, for example
+[//]: # ()
+[//]: # (### Test case one)
 
-````
-```go
-// golden-file: gen_chainer.go
-...put your expected generated code here...
-```
-````
+[//]: # ()
+[//]: # (description for test case one)
+
+[//]: # ()
+[//]: # (...code-block of test case one...)
+
+[//]: # ()
+[//]: # (### Test case two)
+
+[//]: # ()
+[//]: # (description for test case two)
+
+[//]: # ()
+[//]: # (...code-block of test case two...)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (code-block is just a normal Markdown code block format. The test engine treats `go.mod` and `go.sum` as special)
+
+[//]: # (identifiers. For example, this code-block creates new `go.mod` file:)
+
+[//]: # ()
+[//]: # (````)
+
+[//]: # (```go.mod)
+
+[//]: # (put your go.mod file content here)
+
+[//]: # (all direct dependencies are automatically installed)
+
+[//]: # (```)
+
+[//]: # (````)
+
+[//]: # ()
+[//]: # (to declare a pkl file you use pkl and a comment `// file: <relative-path>` on top, for example:)
+
+[//]: # ()
+[//]: # (````)
+
+[//]: # (```pkl)
+
+[//]: # (// file: mock.pkl)
+
+[//]: # (...put your pkl config content here...)
+
+[//]: # (```)
+
+[//]: # (````)
+
+[//]: # ()
+[//]: # (the same format applied for the source file:)
+
+[//]: # ()
+[//]: # (````)
+
+[//]: # (```go)
+
+[//]: # (// file: input.go)
+
+[//]: # (...put your input code here...)
+
+[//]: # (```)
+
+[//]: # (````)
+
+[//]: # ()
+[//]: # (for the expected golden-file use `// golden-file: <relative-path>`, for example)
+
+[//]: # ()
+[//]: # (````)
+
+[//]: # (```go)
+
+[//]: # (// golden-file: gen_chainer.go)
+
+[//]: # (...put your expected generated code here...)
+
+[//]: # (```)
+
+[//]: # (````)
 
 ## Collaboration
 
-Any bug report or feature request requires a Markdown file that makes the test fail. This ensures we are aligned on the
-expected behavior before any code is changed.
+[//]: # (Any bug report or feature request requires a Markdown file that makes the test fail. This ensures we are aligned on the)
+
+[//]: # (expected behavior before any code is changed.)
 
 All contributions will be licensed under the Apache License 2.0.
 

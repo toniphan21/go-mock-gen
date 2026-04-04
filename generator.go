@@ -51,6 +51,31 @@ func (g *generatorImpl) Generate(pkg *packages.Package, configs []Config) error 
 	return nil
 }
 
+func (g *generatorImpl) getNameManager(sourcePkg *packages.Package, gf *genlib.GenFile) (NameManager, bool) {
+	if gf.PkgPath == sourcePkg.PkgPath {
+		nm, have := g.pkgNameManagers[gf.PkgPath]
+		if !have {
+			nm = genlib.NewNameManager("typ", sourcePkg.Types.Scope().Names())
+			g.pkgNameManagers[gf.PkgPath] = nm
+		}
+		return nm, have
+	}
+
+	nm, have := g.pkgNameManagers[gf.PkgPath]
+	if have {
+		return nm, have
+	}
+
+	pkgs, err := packages.Load(genlib.LoadPackagesConfig(g.fileManager.RootDir()), gf.PkgPath)
+	if err != nil || len(pkgs) != 1 {
+		nm = genlib.NewNameManager("typ", nil)
+	} else {
+		nm = genlib.NewNameManager("typ", pkgs[0].Types.Scope().Names())
+	}
+	g.pkgNameManagers[gf.PkgPath] = nm
+	return nm, have
+}
+
 func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []MethodInfo) error {
 	gf, err := g.fileManager.TestFile(pkg, config.Output)
 	if err != nil {
@@ -59,11 +84,8 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 	ctx := NewEmitterContext(pkg, g.fileManager, gf, "v")
 
 	var lib = config.Namer.Library()
-	nm, have := g.pkgNameManagers[pkg.PkgPath]
+	nm, have := g.getNameManager(pkg, gf)
 	if !have {
-		nm = genlib.NewNameManager("typ", pkg.Types.Scope().Names())
-		g.pkgNameManagers[pkg.PkgPath] = nm
-
 		libNames := config.Namer.Library()
 		lib = LibraryData{
 			CallerLocationFunc:            nm.Request(libNames.CallerLocationFunc),

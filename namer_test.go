@@ -40,40 +40,79 @@ func Test_NewNamer(t *testing.T) {
 }
 
 func Test_DefaultNamer(t *testing.T) {
-	n := NewNamer("Repository")
+	t.Run("unexported", func(t *testing.T) {
+		n := NewNamer("Repository")
 
-	assert.Equal(t, LibraryData{
-		CallerLocationFunc:            "mockgenCallerLocation",
-		MethodInterface:               "mockgenMockMethod",
-		MessageWriteArgumentsFunc:     "mockgenMessageWriteArguments",
-		MessageMatchFailFunc:          "mockgenMessageMatchFail",
-		MessageNotImplementedFunc:     "mockgenMessageNotImplemented",
-		MessageCallHistoryFunc:        "mockgenMessageCallHistory",
-		MessageTooManyCallsFunc:       "mockgenMessageTooManyCalls",
-		MessageMatchByNilFunc:         "mockgenMessageMatchByNil",
-		MessageExpectByNilFunc:        "mockgenMessageExpectByNil",
-		MessageExpectAfterStubFunc:    "mockgenMessageExpectAfterStub",
-		MessageStubByNilFunc:          "mockgenMessageStubByNil",
-		MessageStubAfterExpectFunc:    "mockgenMessageStubAfterExpect",
-		MessageDuplicateStubFunc:      "mockgenMessageDuplicateStub",
-		MessageExpectButNotCalledFunc: "mockgenMessageExpectButNotCalled",
-		MessageMatchArgByNilFunc:      "mockgenMessageMatchArgByNil",
-		MessageDuplicateMatchArgFunc:  "mockgenMessageDuplicateMatchArg",
-		MessageMatchArgHintFunc:       "mockgenMessageMatchArgHint",
-		MatchArgumentFunc:             "mockgenMatchArgument",
-		ReflectEqualMatcherFunc:       "mockgenReflectEqualMatcher",
-		BasicComparisonMatcherFunc:    "mockgenBasicComparisonMatcher",
-	}, n.Library())
-	assert.Equal(t, "testRepository", n.Constructor())
-	assert.Equal(t, "repository", n.Struct())
-	assert.Equal(t, "repositoryTestDouble", n.TestDouble())
-	assert.Equal(t, "repositoryStubber", n.Stubber())
-	assert.Equal(t, "repositoryExpecter", n.Expecter())
+		assert.Equal(t, LibraryData{
+			CallerLocationFunc:            "mockgenCallerLocation",
+			MethodInterface:               "mockgenMockMethod",
+			MessageWriteArgumentsFunc:     "mockgenMessageWriteArguments",
+			MessageMatchFailFunc:          "mockgenMessageMatchFail",
+			MessageNotImplementedFunc:     "mockgenMessageNotImplemented",
+			MessageCallHistoryFunc:        "mockgenMessageCallHistory",
+			MessageTooManyCallsFunc:       "mockgenMessageTooManyCalls",
+			MessageMatchByNilFunc:         "mockgenMessageMatchByNil",
+			MessageExpectByNilFunc:        "mockgenMessageExpectByNil",
+			MessageExpectAfterStubFunc:    "mockgenMessageExpectAfterStub",
+			MessageStubByNilFunc:          "mockgenMessageStubByNil",
+			MessageStubAfterExpectFunc:    "mockgenMessageStubAfterExpect",
+			MessageDuplicateStubFunc:      "mockgenMessageDuplicateStub",
+			MessageExpectButNotCalledFunc: "mockgenMessageExpectButNotCalled",
+			MessageMatchArgByNilFunc:      "mockgenMessageMatchArgByNil",
+			MessageDuplicateMatchArgFunc:  "mockgenMessageDuplicateMatchArg",
+			MessageMatchArgHintFunc:       "mockgenMessageMatchArgHint",
+			MatchArgumentFunc:             "mockgenMatchArgument",
+			ReflectEqualMatcherFunc:       "mockgenReflectEqualMatcher",
+			BasicComparisonMatcherFunc:    "mockgenBasicComparisonMatcher",
+		}, n.Library())
+		assert.Equal(t, "testRepository", n.Constructor())
+		assert.Equal(t, "repository", n.Struct())
+		assert.Equal(t, "repositoryTestDouble", n.TestDouble())
+		assert.Equal(t, "repositoryStubber", n.Stubber())
+		assert.Equal(t, "repositoryExpecter", n.Expecter())
 
-	m, ok := n.Method("GetUsers").(*defaultMethodNamer)
-	require.True(t, ok)
+		m, ok := n.Method("GetUsers").(*defaultMethodNamer)
+		require.True(t, ok)
 
-	assert.Equal(t, "repositoryGetUsers", m.base)
+		assert.Equal(t, "repositoryGetUsers", m.base)
+	})
+
+	t.Run("exported", func(t *testing.T) {
+		n := NewNamer("Repository", WithStructName("Repository"))
+
+		assert.Equal(t, LibraryData{
+			CallerLocationFunc:            "mockgenCallerLocation",
+			MethodInterface:               "mockgenMockMethod",
+			MessageWriteArgumentsFunc:     "mockgenMessageWriteArguments",
+			MessageMatchFailFunc:          "mockgenMessageMatchFail",
+			MessageNotImplementedFunc:     "mockgenMessageNotImplemented",
+			MessageCallHistoryFunc:        "mockgenMessageCallHistory",
+			MessageTooManyCallsFunc:       "mockgenMessageTooManyCalls",
+			MessageMatchByNilFunc:         "mockgenMessageMatchByNil",
+			MessageExpectByNilFunc:        "mockgenMessageExpectByNil",
+			MessageExpectAfterStubFunc:    "mockgenMessageExpectAfterStub",
+			MessageStubByNilFunc:          "mockgenMessageStubByNil",
+			MessageStubAfterExpectFunc:    "mockgenMessageStubAfterExpect",
+			MessageDuplicateStubFunc:      "mockgenMessageDuplicateStub",
+			MessageExpectButNotCalledFunc: "mockgenMessageExpectButNotCalled",
+			MessageMatchArgByNilFunc:      "mockgenMessageMatchArgByNil",
+			MessageDuplicateMatchArgFunc:  "mockgenMessageDuplicateMatchArg",
+			MessageMatchArgHintFunc:       "mockgenMessageMatchArgHint",
+			MatchArgumentFunc:             "mockgenMatchArgument",
+			ReflectEqualMatcherFunc:       "mockgenReflectEqualMatcher",
+			BasicComparisonMatcherFunc:    "mockgenBasicComparisonMatcher",
+		}, n.Library())
+		assert.Equal(t, "NewRepository", n.Constructor())
+		assert.Equal(t, "Repository", n.Struct())
+		assert.Equal(t, "RepositoryTestDouble", n.TestDouble())
+		assert.Equal(t, "RepositoryStubber", n.Stubber())
+		assert.Equal(t, "RepositoryExpecter", n.Expecter())
+
+		m, ok := n.Method("GetUsers").(*defaultMethodNamer)
+		require.True(t, ok)
+
+		assert.Equal(t, "RepositoryGetUsers", m.base)
+	})
 }
 
 func Test_DefaultMethodNamer(t *testing.T) {
