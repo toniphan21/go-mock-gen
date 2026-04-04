@@ -7,13 +7,12 @@ and [idiomatic](example/mockgen_example_test.go) mock for testing with strong fo
 are no any, no magic matchers. The API is designed so you can't do anything wrong - and when you do, it tells you
 exactly why, where, and how to fix it.
 
-<p align="center">
-  <a href="https://nhatp.com/go/mock-gen/demo/">
-    <h3>Live Demo</h3>
-  </a>
-</p>
+
+<p align="center"><a href="https://nhatp.com/go/mock-gen/demo/"><img src="/toniphan21/go-mock-gen/raw/main/screenshots/live-demo.png"></a></p>
+
 
 ![Quick Demo](screenshots/demo.png)
+
 
 ## Quick Usage
 
@@ -87,18 +86,18 @@ On same method you cannot mix between them otherwise the test will fail immediat
 There are only 10 ways to set an expectation - no Once(), no Twice(), no Times(). If you want to expect 2 calls, just
 expect twice.
 
-| after `.EXPECT().Method(t)`           | Arguments         | Return | Usage                                     |
-|---------------------------------------|-------------------|--------|-------------------------------------------|
-| `<empty>`                             | -                 | zero   | expect the call, ignore args              |
-| `.Return(…)`                          | -                 | …      | ignore args, stub return                  |
-| `.With(…)`                            | all, value        | zero   | match all args by value                   |
-| `.With(…).Return(…)`                  | all, value        | …      | match all args by value, stub return      |
-| `.With[Arg](…)`                       | partial, value    | zero   | match ctx by value                        |
-| `.With[Arg](…).Return(…)`             | partial, value    | …      | match single arg by value, stub return    |
-| `.Match(func(…) bool)`                | all, callback     | zero   | match all args by callback                |
-| `.Match(func(…) bool).Return(…)`      | all, callback     | …      | match all args by callback, stub return   |
-| `.Match[Arg](func(…) bool)`           | partial, callback | zero   | match single arg by callback              |
-| `.Match[Arg](func(…) bool).Return(…)` | partial, callback | …      | match single arg by callback, stub return |
+| after `.EXPECT().Method(t)`           | Arguments         | Return | Usage                         |
+|---------------------------------------|-------------------|--------|-------------------------------|
+| `<empty>`                             | -                 | zero   | expect the call, ignore args  |
+| `.Return(…)`                          | -                 | …      | ignore args                   |
+| `.With(…)`                            | all, value        | zero   | match all args by value       |
+| `.With(…).Return(…)`                  | all, value        | …      | match all args by value       |
+| `.With[Arg](…)`                       | partial, value    | zero   | match argument(s) by value    |
+| `.With[Arg](…).Return(…)`             | partial, value    | …      | match argument(s) by value    |
+| `.Match(func(…) bool)`                | all, callback     | zero   | match all args by callback    |
+| `.Match(func(…) bool).Return(…)`      | all, callback     | …      | match all args by callback    |
+| `.Match[Arg](func(…) bool)`           | partial, callback | zero   | match argument(s) by callback |
+| `.Match[Arg](func(…) bool).Return(…)` | partial, callback | …      | match argument(s) by callback |
 
 If you use it in a wrong way the IDE will show you the error. In case it is not a syntax error the test will fail and
 show you exactly why.
