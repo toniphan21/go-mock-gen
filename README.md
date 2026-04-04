@@ -8,7 +8,7 @@ are no any, no magic matchers. The API is designed so you can't do anything wron
 exactly why, where, and how to fix it.
 
 
-<p align="center"><a href="https://nhatp.com/go/mock-gen/demo/"><img src="/toniphan21/go-mock-gen/raw/main/screenshots/live-demo.png"></a></p>
+<p align="center"><a href="https://nhatp.com/go/mock-gen/demo/"><img src="/screenshots/live-demo.png"></a></p>
 
 
 ![Quick Demo](screenshots/demo.png)
