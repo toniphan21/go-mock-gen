@@ -17,6 +17,7 @@ func generateCodeForIntegrationTest(t *testing.T) {
 				TestFileName: "gen_test.go",
 			},
 			InterfaceName: "Repository",
+			EmitExamples:  true,
 		},
 
 		{
@@ -25,6 +26,7 @@ func generateCodeForIntegrationTest(t *testing.T) {
 				TestFileName: "gen_test.go",
 			},
 			InterfaceName: "Service",
+			EmitExamples:  true,
 			SkipExpect:    true,
 		},
 	}

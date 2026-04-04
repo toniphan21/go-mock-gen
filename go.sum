@@ -25,5 +25,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-nhatp.com/go/gen-lib v0.11.1-0.20260403193624-aa34c8943a1a h1:i7DgCuKXSpAuevRiY/Ul1C1R9kkNPWZCIh4AXLclR1U=
-nhatp.com/go/gen-lib v0.11.1-0.20260403193624-aa34c8943a1a/go.mod h1:xwfdFMaeAzOabgnLi7h8jVlZdl7Tv4KA6irIHHp6TkQ=
+nhatp.com/go/gen-lib v0.12.0 h1:y1xPal1kfYAQAyZCACKrThkQQ0LdmRc/6qS1wc9eqK8=
+nhatp.com/go/gen-lib v0.12.0/go.mod h1:xwfdFMaeAzOabgnLi7h8jVlZdl7Tv4KA6irIHHp6TkQ=

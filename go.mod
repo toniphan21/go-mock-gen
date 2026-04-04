@@ -8,7 +8,7 @@ require (
 	github.com/ettle/strcase v0.2.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/tools v0.42.0
-	nhatp.com/go/gen-lib v0.11.1-0.20260403193624-aa34c8943a1a
+	nhatp.com/go/gen-lib v0.12.0
 )
 
 require (

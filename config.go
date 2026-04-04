@@ -7,5 +7,6 @@ type Config struct {
 	StructName    string // optional
 	Namer         Namer  // optional
 	SkipExpect    bool   // optional
+	EmitExamples  bool
 	OmitGoDoc     bool
 }

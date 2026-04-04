@@ -9,7 +9,7 @@ import (
 
 func Test_Repository(t *testing.T) {
 	repo := mock.NewRepository()
-	repo.EXPECT()
+	repo.EXPECT().CreateUser(t).WithAge(10)
 
 	_, _ = repo.CreateUser(context.Background(), "anything", 10)
 }

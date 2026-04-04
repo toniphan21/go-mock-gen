@@ -1,6 +1,8 @@
 package mockgen
 
 import (
+	"strings"
+
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/tools/go/packages"
 	genlib "nhatp.com/go/gen-lib"
@@ -10,6 +12,7 @@ type generatorImpl struct {
 	fileManager     FileManager
 	emitter         Emitter
 	pkgNameManagers map[string]NameManager
+	logger          Logger
 }
 
 func filterConfigs(pkg *packages.Package, configs []Config) []Config {
@@ -36,15 +39,21 @@ func filterConfigs(pkg *packages.Package, configs []Config) []Config {
 }
 
 func (g *generatorImpl) Generate(pkg *packages.Package, configs []Config) error {
-	cfs := filterConfigs(pkg, configs)
+	matchPkgConfigs := filterConfigs(pkg, configs)
 
-	for _, config := range cfs {
+	cfs := make(map[Config][]MethodInfo)
+	for _, config := range matchPkgConfigs {
 		methods := parse(pkg, config.InterfaceName, config.Namer)
 		if len(methods) == 0 {
 			continue
 		}
+		cfs[config] = methods
+	}
+	g.logger.Parsed(pkg, cfs)
 
+	for config, methods := range cfs {
 		if err := g.generate(pkg, config, methods); err != nil {
+			g.logger.Error("generate", err)
 			return err
 		}
 	}
@@ -82,6 +91,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 		return err
 	}
 	ctx := NewEmitterContext(pkg, g.fileManager, gf, "v")
+	g.logger.StartGenerating(pkg, config)
 
 	var lib = config.Namer.Library()
 	nm, have := g.getNameManager(pkg, gf)
@@ -234,8 +244,30 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			Lib:                    lib,
 			SkipExpect:             config.SkipExpect,
 		}))
+
+		if config.EmitExamples {
+			eo := g.makeExampleOutput(config.Output)
+			egf, err := g.fileManager.Make(pkg, eo.PackageName, eo.TestFileName)
+			if err != nil {
+				return err
+			}
+
+			g.collect(egf, g.emitter.Example(ctx, ExampleData{
+				Constructor:   targetConstructor,
+				InterfaceName: config.InterfaceName,
+				MethodName:    method.Name,
+				Arguments:     method.Arguments,
+				Returns:       method.Returns,
+				SkipExpect:    config.SkipExpect,
+			}))
+		}
 	}
 
+	g.logger.Generated(pkg, GeneratedInfo{
+		Config:      config,
+		Struct:      targetStruct,
+		Constructor: targetConstructor,
+	})
 	return nil
 }
 
@@ -245,5 +277,24 @@ func (g *generatorImpl) collect(gf *genlib.GenFile, codes []jen.Code) {
 		if code != nil {
 			jf.Add(code)
 		}
+	}
+}
+
+func (g *generatorImpl) makeExampleOutput(output Output) Output {
+	var testFileName = output.TestFileName
+	switch {
+	case strings.HasSuffix(testFileName, "_test.go"):
+		testFileName = strings.TrimSuffix(testFileName, "_test.go") + "_example_test.go"
+
+	case strings.HasSuffix(testFileName, ".go"):
+		testFileName = strings.TrimSuffix(testFileName, ".go") + "_example.go"
+
+	default:
+		testFileName = testFileName + ".example"
+	}
+
+	return Output{
+		PackageName:  output.PackageName,
+		TestFileName: testFileName,
 	}
 }

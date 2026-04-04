@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/alexflint/go-arg"
+	"golang.org/x/tools/go/packages"
 	"nhatp.com/go/gen-lib/cli"
 	"nhatp.com/go/gen-lib/cli/color"
 	mockgen "nhatp.com/go/mock-gen"
@@ -23,6 +24,7 @@ type Arguments struct {
 	PackageName string `arg:"-p,--package" placeholder:"PKG_NAME" help:"Package name for the generated code. Defaults to the source package name of the interface"`
 	Output      string `arg:"-o,--output" placeholder:"PATH" help:"Output file for the generated code" default:"mockgen_test.go"`
 	DryRun      bool   `arg:"-d,--dry-run" help:"Preview changes without writing to disk" default:"false"`
+	EmitExample bool   `arg:"--example" help:"emit test examples" default:"false"`
 	OmitExpect  bool   `arg:"--omit-expect" help:"omit EXPECT mock generation" default:"false"`
 
 	NoColor bool `arg:"--no-color" help:"Disable colors" default:"false"`
@@ -32,6 +34,9 @@ func (*Arguments) Epilogue() string {
 	return `Examples:
   Generate mocks for a single interface:
     go-mock-gen -i Repository
+
+  Generate mocks for a single interface with example tests
+    go-mock-gen -i Repository --example
 
   Generate mocks for multiple interfaces:
     go-mock-gen -i Repository,UserService
@@ -87,7 +92,6 @@ func generate(cmd Arguments, logger *slog.Logger) {
 	if len(iface) == 0 {
 		logger.Error(cli.ColorRed("no interface specified, use -i NAME (comma-separated list accepted)"))
 	}
-	logger.Info(fmt.Sprintf("generating mock for interface %s", strings.Join(ifaceStrings, ", ")))
 
 	if len(iface) > 1 && strings.TrimSpace(cmd.Struct) != "" {
 		logger.Error(cli.ColorRed("--struct/-s can only be used when generating a mock for a single interface"))
@@ -121,6 +125,7 @@ func generate(cmd Arguments, logger *slog.Logger) {
 			InterfaceName: v,
 			StructName:    structName,
 			SkipExpect:    cmd.OmitExpect,
+			EmitExamples:  cmd.EmitExample,
 		})
 	}
 
@@ -130,8 +135,34 @@ func generate(cmd Arguments, logger *slog.Logger) {
 		os.Exit(1)
 	}
 
+	logPoints := &mockgen.LogPoints{
+		Error: func(action string, err error) {
+			logger.Error(cli.ColorRed(action + ": " + err.Error()))
+		},
+		FilteredConfigs: func(pkg *packages.Package, parsed map[mockgen.Config][]mockgen.MethodInfo) {
+			var interfaces []string
+			for config := range parsed {
+				interfaces = append(interfaces, color.Source(config.InterfaceName))
+			}
+			if len(interfaces) > 0 {
+				logger.Info(fmt.Sprintf(
+					"package %s: %s",
+					color.Package(pkg.PkgPath), strings.Join(interfaces, ", "),
+				))
+			}
+		},
+		Generated: func(pkg *packages.Package, info mockgen.GeneratedInfo) {
+			logger.Info(fmt.Sprintf(
+				"\t generated mock struct %s for interface %s with constructor %s",
+				color.Generated(info.Struct),
+				color.Source(info.Config.InterfaceName),
+				color.Generated(info.Constructor+"()"),
+			))
+		},
+	}
+
 	fileManager := mockgen.NewFileManager(dir, mockgen.WithBinaryName(mockgen.BinaryFullName), mockgen.WithVersion(mockgen.BinaryVersion))
-	generator := mockgen.New(fileManager)
+	generator := mockgen.New(fileManager, mockgen.WithLogPoints(logPoints))
 
 	pkgs, err := mockgen.LoadPackages(dir)
 	for _, pkg := range pkgs {
@@ -142,7 +173,6 @@ func generate(cmd Arguments, logger *slog.Logger) {
 		}
 
 		if err = generator.Generate(pkg, configs); err != nil {
-			logger.Error(cli.ColorRed(err.Error()))
 			os.Exit(1)
 		}
 	}
@@ -173,7 +203,7 @@ func generate(cmd Arguments, logger *slog.Logger) {
 				logger.Error(cli.ColorRed(err.Error()))
 				os.Exit(1)
 			}
-			logger.Info(color.Binary(mockgen.BinaryName) + " saved " + out.RelPath)
+			logger.Info(color.Binary(mockgen.BinaryName) + " saved " + color.Generated(out.RelPath))
 		}
 	}
 	logger.Info(cli.ColorGreen("done"))

@@ -125,6 +125,7 @@ type Emitter interface {
 	MethodExpecterMatchArg(ctx genlib.EmitterContext, data MethodExpecterMatchArgData) []jen.Code
 	MethodExpecterValue(ctx genlib.EmitterContext, data MethodExpecterValueData) []jen.Code
 	MethodExpecterValueArg(ctx genlib.EmitterContext, data MethodExpecterValueArgData) []jen.Code
+	Example(ctx genlib.EmitterContext, data ExampleData) []jen.Code
 }
 
 type DefaultEmitter struct {
@@ -167,6 +168,10 @@ func (e *DefaultEmitter) MethodExpecterValue(ctx genlib.EmitterContext, data Met
 }
 
 func (e *DefaultEmitter) MethodExpecterValueArg(ctx genlib.EmitterContext, data MethodExpecterValueArgData) []jen.Code {
+	return data.GenerateCode()
+}
+
+func (e *DefaultEmitter) Example(ctx genlib.EmitterContext, data ExampleData) []jen.Code {
 	return data.GenerateCode()
 }
 
