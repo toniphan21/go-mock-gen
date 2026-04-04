@@ -20,3 +20,11 @@ type Repository interface {
 type Service interface {
 	VeryComplicated(id int) error
 }
+
+type Dispatcher interface {
+	UserCreated(user User) error
+
+	UserUpdated(user User) error
+
+	UserDeleted(user User) error
+}

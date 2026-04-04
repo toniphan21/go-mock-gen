@@ -161,6 +161,7 @@ func Test_Repository_CreateUser(t *testing.T) {
 		fmt.Println(spy)
 	})
 }
+
 func Test_Repository_GetUsers(t *testing.T) {
 	mock := testRepository()
 

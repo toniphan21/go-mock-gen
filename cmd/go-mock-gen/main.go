@@ -145,10 +145,7 @@ func generate(cmd Arguments, logger *slog.Logger) {
 				interfaces = append(interfaces, color.Source(config.InterfaceName))
 			}
 			if len(interfaces) > 0 {
-				logger.Info(fmt.Sprintf(
-					"package %s: %s",
-					color.Package(pkg.PkgPath), strings.Join(interfaces, ", "),
-				))
+				logger.Info(fmt.Sprintf("package %s:", color.Package(pkg.PkgPath)))
 			}
 		},
 		Generated: func(pkg *packages.Package, info mockgen.GeneratedInfo) {

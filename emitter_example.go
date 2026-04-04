@@ -377,6 +377,6 @@ func (d *ExampleData) GenerateCode() []jen.Code {
 	return []jen.Code{
 		jen.Func().Id(fmt.Sprintf("Test_%s_%s", d.InterfaceName, d.MethodName)).
 			Params(jen.Id("t").Op("*").Qual("testing", "T")).
-			Block(body...),
+			Block(body...).Line(),
 	}
 }
