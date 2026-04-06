@@ -23,11 +23,18 @@ func Test_MethodExpecterMatchData_GenerateCode(t *testing.T) {
 		},
 
 		{
+			name:     "emit nothing if there is no argument",
+			data:     MethodExpecterMatchData{},
+			expected: "",
+		},
+
+		{
 			name: "emit a struct with return syntax enforced code",
 			data: MethodExpecterMatchData{
 				ExpecterMatchStruct: "targetMethodExpecterWithMatch",
 				ExpectStruct:        "targetMethodExpect",
 				ReturnStruct:        "targetMethodReturn",
+				Arguments:           varInfos("input: input string"),
 				Returns:             varInfos("First: first string", "Second: second error"),
 			},
 			expected: `package emitter
@@ -48,6 +55,7 @@ func (e *targetMethodExpecterWithMatch) Return(first string, second error) {
 				ExpecterMatchStruct: "targetMethodExpecterWithMatch",
 				ExpectStruct:        "targetMethodExpect",
 				ReturnStruct:        "targetMethodReturn",
+				Arguments:           varInfos("input: input string"),
 				Returns:             varInfos("e: e string", "e0: e0 error", "e1: e1 error"),
 			},
 			expected: `package emitter

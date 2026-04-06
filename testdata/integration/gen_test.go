@@ -772,22 +772,6 @@ func (e *repositoryCountExpecter) Return(first int) {
 	e.expect.returns = repositoryCountReturn{first: first}
 }
 
-type repositoryCountExpecterWithMatch struct {
-	expect *repositoryCountExpect
-}
-
-func (e *repositoryCountExpecterWithMatch) Return(first int) {
-	e.expect.returns = repositoryCountReturn{first: first}
-}
-
-type repositoryCountExpecterWithValue struct {
-	expect *repositoryCountExpect
-}
-
-func (e *repositoryCountExpecterWithValue) Return(first int) {
-	e.expect.returns = repositoryCountReturn{first: first}
-}
-
 type repositoryCreateUser struct {
 	Calls        []repositoryCreateUserCall
 	stub         func(ctx context.Context, user User) error

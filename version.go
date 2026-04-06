@@ -1,6 +1,6 @@
 package mockgen
 
-const Version = "0.1.1"
+const Version = "0.1.2"
 
 const BinaryPath = "nhatp.com/go/mock-gen/cmd/"
 const BinaryName = "go-mock-gen"

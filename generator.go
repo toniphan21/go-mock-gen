@@ -211,6 +211,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			ExpecterMatchStruct: method.ExpecterMatchStruct,
 			ExpectStruct:        method.ExpectStruct,
 			ReturnStruct:        method.ReturnStruct,
+			Arguments:           method.Arguments,
 			Returns:             method.Returns,
 			SkipExpect:          config.SkipExpect,
 		}))
@@ -230,6 +231,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			ExpecterValueStruct: method.ExpecterValueStruct,
 			ExpectStruct:        method.ExpectStruct,
 			ReturnStruct:        method.ReturnStruct,
+			Arguments:           method.Arguments,
 			Returns:             method.Returns,
 			SkipExpect:          config.SkipExpect,
 		}))

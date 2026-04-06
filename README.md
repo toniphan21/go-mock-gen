@@ -3,8 +3,8 @@
 
 `go-mock-gen` is a tool to generate
 a [type-safe](#Screenshots), [minimal](#API), [zero-dependency](example/mockgen_test.go)
-and [idiomatic](example/mockgen_example_test.go) mock for testing with strong focus on the Developer Experience. There
-are no any, no magic matchers. The API is designed so you can't do anything wrong - and when you do, it tells you
+and [idiomatic](example/mockgen_example_test.go) mock for testing with a strong focus on Developer Experience. There
+are no `any`, no magic matchers. The API is designed so you can't do anything wrong - and when you do, it tells you
 exactly why, where, and how to fix it.
 
 
@@ -16,7 +16,7 @@ exactly why, where, and how to fix it.
 
 ## Quick Usage
 
-You can run the command to generate directly via `go run`
+You can run the command to generate directly via `go run`.
 
 ~~~bash
 go run nhatp.com/go/mock-gen/cmd/go-mock-gen -i Interface -o mock_interface_test.go
@@ -36,18 +36,18 @@ Usage: go-mock-gen [--interface NAME] [--struct STRUCT] [--package PKG_NAME] [--
 
 Options:
   --interface NAME, -i NAME
-                         Comma-separated list of interfaces to mock (e.g. Repository,UserService)
+                         comma-separated list of interfaces to mock (e.g. Repository,UserService)
   --struct STRUCT, -s STRUCT
-                         Struct name for the generated mock; only valid when mocking a single interface;
+                         struct name for the generated mock; only valid when mocking a single interface;
                          defaults to the unexported interface name (e.g. Repository -> repository)
   --package PKG_NAME, -p PKG_NAME
-                         Package name for the generated code. Defaults to the source package name of the interface
+                         package name for the generated code. Defaults to the source package name of the interface
   --output PATH, -o PATH
-                         Output file for the generated code [default: mockgen_test.go]
-  --dry-run, -d          Preview changes without writing to disk [default: false]
+                         output file for the generated code [default: mockgen_test.go]
+  --dry-run, -d          preview changes without writing to disk [default: false]
   --example              emit test examples [default: false]
   --omit-expect          omit EXPECT mock generation [default: false]
-  --no-color             Disable colors [default: false]
+  --no-color             disable colors [default: false]
   --help, -h             display this help and exit
 
 Commands:
@@ -57,7 +57,7 @@ Examples:
   Generate mocks for a single interface:
     go-mock-gen -i Repository
 
-  Generate mocks for a single interface with example tests
+  Generate mocks for a single interface with example tests:
     go-mock-gen -i Repository --example
 
   Generate mocks for multiple interfaces:
@@ -74,17 +74,17 @@ Examples:
 
 ## API
 
-There are 2 API categories:
+There are two API categories:
 
 - The `.EXPECT()` way is for convenience.
-- The `.STUB()` way is for fine-grain control.
+- The `.STUB()` way is for fine-grained control.
 
-On same method you cannot mix between them otherwise the test will fail immediately.
+On the same method, you cannot mix between them, otherwise the test will fail immediately.
 
 ### .EXPECT()
 
 There are only 10 ways to set an expectation - no Once(), no Twice(), no Times(). If you want to expect 2 calls, just
-expect twice.
+use EXPECT twice.
 
 | after `.EXPECT().Method(t)`           | Arguments         | Return | Usage                         |
 |---------------------------------------|-------------------|--------|-------------------------------|
@@ -102,6 +102,7 @@ expect twice.
 If you use it in a wrong way the IDE will show you the error. In case it is not a syntax error the test will fail and
 show you exactly why.
 
+Quick example:
 ```go
 package test
 
@@ -129,8 +130,8 @@ func Test_Quick_Expect_Example(t *testing.T) {
 
 ### .STUB()
 
-Stub API even simpler than the EXPECT, you need to provide the STUB function which has the same signature with the
-implementation, it returns you a spy for you to assert yourself:
+The STUB API is even simpler than EXPECT. You need to provide a function with the same signature as the
+implementation, and it returns a spy for you to assert yourself:
 
 ```go
 package test
@@ -169,28 +170,32 @@ func Test_STUB(t *testing.T) {
 ## Screenshots
 
 ![Syntax error when mix partial and full match](screenshots/syntax-error-partial-and-full.png)
-*You cannot mix between matching all arguments or partial argument(s), enforced in syntax level*
+*You cannot mix between matching all arguments or partial argument(s), enforced at the syntax level*
 
 ![Syntax error when mix With and Match](screenshots/syntax-error-with-match.png)
-*You cannot mix between argument via value or a callback, enforced in syntax level*
+*You cannot mix between argument via value or a callback, enforced at the syntax level*
 
 ![mixed EXPECT() and STUB()](screenshots/wrong-usage.mixed-expect-stub.png)
 *You cannot use .EXPECT() and .STUB() on the same method*
 
 ![pass nil](screenshots/wrong-usage-pass-nil-to-method.png)
-*When nil passed where it is not expected, go-mock-gen tell you why and where*
+*When nil is passed where it is not expected, go-mock-gen tells you why and where*
 
 ![failed call not expected](screenshots/failed-called-not-expected.png)
-*Error message when call is not expected with full history*
+*Error message when a call is not expected with full history*
 
 ![failed expect but not called](screenshots/failed-expect-but-not-called.png)
-*Error message when expect but not called with full history*
+*Error message when expected but not called with full history*
 
 ![failed match value failed](screenshots/failed-match-with-value.png)
-*Error message when expect argument by value failed*
+*Error message when expected argument by value fails*
 
 ![failed match value failed](screenshots/failed-match-return-false.png)
-*Error message when match argument callback return false*
+*Error message when match argument callback returns false*
+
+
+<p align="center"><a href="https://nhatp.com/go/mock-gen/demo/index.html"><img src="/screenshots/live-demo.png"></a></p>
+
 
 ### Contributing & License
 

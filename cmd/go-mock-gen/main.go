@@ -19,15 +19,15 @@ type VersionCmd struct{}
 type Arguments struct {
 	Version *VersionCmd `arg:"subcommand:version" help:"Print version information and exit"`
 
-	Interface   string `arg:"-i,--interface" placeholder:"NAME" help:"Comma-separated list of interfaces to mock (e.g. Repository,UserService)"`
-	Struct      string `arg:"-s,--struct" placeholder:"STRUCT" help:"Struct name for the generated mock; only valid when mocking a single interface;\n                         defaults to the unexported interface name (e.g. Repository -> repository)"`
-	PackageName string `arg:"-p,--package" placeholder:"PKG_NAME" help:"Package name for the generated code. Defaults to the source package name of the interface"`
-	Output      string `arg:"-o,--output" placeholder:"PATH" help:"Output file for the generated code" default:"mockgen_test.go"`
-	DryRun      bool   `arg:"-d,--dry-run" help:"Preview changes without writing to disk" default:"false"`
+	Interface   string `arg:"-i,--interface" placeholder:"NAME" help:"comma-separated list of interfaces to mock (e.g. Repository,UserService)"`
+	Struct      string `arg:"-s,--struct" placeholder:"STRUCT" help:"struct name for the generated mock; only valid when mocking a single interface;\n                         defaults to the unexported interface name (e.g. Repository -> repository)"`
+	PackageName string `arg:"-p,--package" placeholder:"PKG_NAME" help:"package name for the generated code. Defaults to the source package name of the interface"`
+	Output      string `arg:"-o,--output" placeholder:"PATH" help:"output file for the generated code" default:"mockgen_test.go"`
+	DryRun      bool   `arg:"-d,--dry-run" help:"preview changes without writing to disk" default:"false"`
 	EmitExample bool   `arg:"--example" help:"emit test examples" default:"false"`
 	OmitExpect  bool   `arg:"--omit-expect" help:"omit EXPECT mock generation" default:"false"`
 
-	NoColor bool `arg:"--no-color" help:"Disable colors" default:"false"`
+	NoColor bool `arg:"--no-color" help:"disable colors" default:"false"`
 }
 
 func (*Arguments) Epilogue() string {
@@ -35,7 +35,7 @@ func (*Arguments) Epilogue() string {
   Generate mocks for a single interface:
     go-mock-gen -i Repository
 
-  Generate mocks for a single interface with example tests
+  Generate mocks for a single interface with example tests:
     go-mock-gen -i Repository --example
 
   Generate mocks for multiple interfaces:
