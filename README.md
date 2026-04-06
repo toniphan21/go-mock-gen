@@ -1,5 +1,4 @@
-# go-mock-gen
-
+# go-mock-gen [![codecov](https://codecov.io/github/toniphan21/go-mock-gen/graph/badge.svg)](https://codecov.io/github/toniphan21/go-mock-gen) [![Go Report Card](https://goreportcard.com/badge/github.com/toniphan21/go-mock-gen)](https://goreportcard.com/report/github.com/toniphan21/go-mock-gen) [![Go Reference](https://pkg.go.dev/badge/nhatp.com/go/mock-gen?status.svg)](https://pkg.go.dev/nhatp.com/go/mock-gen?tab=doc)
 
 `go-mock-gen` is a tool to generate
 a [type-safe](#Screenshots), [minimal](#API), [zero-dependency](example/mockgen_test.go)
