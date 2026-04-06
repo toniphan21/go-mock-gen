@@ -82,7 +82,7 @@ func (d *ExampleData) expectCalledStubReturnCode() jen.Code {
 	body = append(body, args...)
 	body = append(body, jen.List(rets...).Op(":=").Id(d.varMock).Dot(d.MethodName).Call(argIds...))
 
-	for i, _ := range d.Returns {
+	for i := range d.Returns {
 		body = append(body, jen.Qual("fmt", "Println").Call(rets[i], returnIds[i]))
 	}
 	return d.testCaseCode("expect called - stub return", body)
@@ -128,7 +128,7 @@ func (d *ExampleData) expectAllUseValueStubReturn() jen.Code {
 	)
 	body = append(body, jen.List(rets...).Op(":=").Id(d.varMock).Dot(d.MethodName).Call(argIds...))
 
-	for i, _ := range d.Returns {
+	for i := range d.Returns {
 		body = append(body, jen.Qual("fmt", "Println").Call(rets[i], returnIds[i]))
 	}
 
@@ -186,7 +186,7 @@ func (d *ExampleData) expectPartialUseValueStubReturn() jen.Code {
 	}
 	body = append(body, jen.List(rets...).Op(":=").Id(d.varMock).Dot(d.MethodName).Call(argIds...))
 
-	for i, _ := range d.Returns {
+	for i := range d.Returns {
 		body = append(body, jen.Qual("fmt", "Println").Call(rets[i], returnIds[i]))
 	}
 
@@ -232,7 +232,7 @@ func (d *ExampleData) expectAllUseCallbackStubReturn() jen.Code {
 	body = append(body, args...)
 	body = append(body, jen.List(rets...).Op(":=").Id(d.varMock).Dot(d.MethodName).Call(argIds...))
 
-	for i, _ := range d.Returns {
+	for i := range d.Returns {
 		body = append(body, jen.Qual("fmt", "Println").Call(rets[i], returnIds[i]))
 	}
 
@@ -281,7 +281,7 @@ func (d *ExampleData) expectPartialUseCallbackStubReturn() jen.Code {
 	body = append(body, args...)
 	body = append(body, jen.List(rets...).Op(":=").Id(d.varMock).Dot(d.MethodName).Call(argIds...))
 
-	for i, _ := range d.Returns {
+	for i := range d.Returns {
 		body = append(body, jen.Qual("fmt", "Println").Call(rets[i], returnIds[i]))
 	}
 	return d.testCaseCode("expect called - match partial by callback - stub return", body)
