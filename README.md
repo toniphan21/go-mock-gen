@@ -31,11 +31,14 @@ options
 
 ~~~bash
 > go-mock-gen --help
-Usage: go-mock-gen [--interface NAME] [--struct STRUCT] [--package PKG_NAME] [--output PATH] [--dry-run] [--example] [--omit-expect] [--no-color] <command> [<args>]
+Usage: go-mock-gen [--interface NAMES] [--struct STRUCT] [--package PKG_NAME] [--output PATH] [--dry-run] [--example] [--omit-expect] [--no-color] <command> [<args>]
 
 Options:
-  --interface NAME, -i NAME
-                         comma-separated list of interfaces to mock (e.g. Repository,UserService)
+  --interface NAMES, -i NAMES
+                         comma-separated list of interfaces to mock. Supports:
+                           - local    : Repository
+                           - qualified: io.Reader
+                           - full path: github.com/user/pkg.Interface
   --struct STRUCT, -s STRUCT
                          struct name for the generated mock; only valid when mocking a single interface;
                          defaults to the unexported interface name (e.g. Repository -> repository)
@@ -50,23 +53,26 @@ Options:
   --help, -h             display this help and exit
 
 Commands:
-  version                Print version information and exit
+  version                print version information and exit
 
 Examples:
-  Generate mocks for a single interface:
-    go-mock-gen -i Repository
+  # Generate a mock for a local interface:
+  go-mock-gen -i Repository
 
-  Generate mocks for a single interface with example tests:
-    go-mock-gen -i Repository --example
+  # Generate a mock for a single interface with example tests:
+  go-mock-gen -i Repository --example
 
-  Generate mocks for multiple interfaces:
-    go-mock-gen -i Repository,UserService
+  # Generate a mock from standard library or external packages:
+  go-mock-gen -i io.Reader,net/http.RoundTripper
 
-  Generate a mock with a custom struct name:
-    go-mock-gen -i Repository -s repoMock
+  # Generate mocks for multiple local interfaces:
+  go-mock-gen -i Repository,UserService
 
-  Generate with a custom package and output file:
-    go-mock-gen -i Repository -p mocks -o mocks/mockgen_test.go
+  # Generate a mock with a custom struct name:
+  go-mock-gen -i Repository -s repoMock
+
+  # Generate with a custom package and output file:
+  go-mock-gen -i Repository -S Repository -p mock -o mock/mockgen_test.go
 ~~~
 
 ---

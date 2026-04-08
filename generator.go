@@ -29,7 +29,7 @@ func filterConfigs(pkg *packages.Package, configs []Config) []Config {
 		c := v
 		if c.Namer == nil {
 			c.Namer = NewNamer(
-				v.InterfaceName,
+				getInterfaceInfo(v.InterfaceName).name,
 				WithStructName(v.StructName),
 			)
 		}
@@ -43,7 +43,7 @@ func (g *generatorImpl) Generate(pkg *packages.Package, configs []Config) error 
 
 	cfs := make(map[Config][]MethodInfo)
 	for _, config := range matchPkgConfigs {
-		methods := parse(pkg, config.InterfaceName, config.Namer)
+		methods := parse(g.fileManager.RootDir(), pkg, getInterfaceInfo(config.InterfaceName), config.Namer)
 		if len(methods) == 0 {
 			continue
 		}
@@ -86,6 +86,7 @@ func (g *generatorImpl) getNameManager(sourcePkg *packages.Package, gf *genlib.G
 }
 
 func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []MethodInfo) error {
+	iface := getInterfaceInfo(config.InterfaceName)
 	gf, err := g.fileManager.TestFile(pkg, config.Output)
 	if err != nil {
 		return err
@@ -147,7 +148,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 	}
 
 	g.collect(gf, g.emitter.Target(ctx, TargetData{
-		Interface:        config.InterfaceName,
+		Interface:        iface.name,
 		Struct:           targetStruct,
 		Constructor:      targetConstructor,
 		TestDoubleStruct: targetTestDoubleStruct,
@@ -184,7 +185,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			ArgumentMatcherStruct: method.ArgumentMatcherStruct,
 			ReturnStruct:          method.ReturnStruct,
 			ExpectStruct:          method.ExpectStruct,
-			Interface:             config.InterfaceName,
+			Interface:             iface.name,
 			Name:                  method.Name,
 			Arguments:             method.Arguments,
 			Returns:               method.Returns,
@@ -256,7 +257,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 
 			g.collect(egf, g.emitter.Example(ctx, ExampleData{
 				Constructor:   targetConstructor,
-				InterfaceName: config.InterfaceName,
+				InterfaceName: iface.name,
 				MethodName:    method.Name,
 				Arguments:     method.Arguments,
 				Returns:       method.Returns,
@@ -289,7 +290,7 @@ func (g *generatorImpl) makeExampleOutput(output Output) Output {
 		testFileName = strings.TrimSuffix(testFileName, "_test.go") + "_example_test.go"
 
 	case strings.HasSuffix(testFileName, ".go"):
-		testFileName = strings.TrimSuffix(testFileName, ".go") + "_example.go"
+		testFileName = strings.TrimSuffix(testFileName, ".go") + "_example_test.go"
 
 	default:
 		testFileName = testFileName + ".example"

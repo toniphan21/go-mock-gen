@@ -2,8 +2,10 @@ package mockgen
 
 import (
 	"go/types"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
+	genlib "nhatp.com/go/gen-lib"
 )
 
 type parsedMethod struct {
@@ -12,8 +14,43 @@ type parsedMethod struct {
 	results   []*types.Var
 }
 
-func parse(pkg *packages.Package, interfaceName string, namer Namer) []MethodInfo {
-	methods := parseSignatures(pkg, interfaceName)
+type interfaceInfo struct {
+	pkgPath string
+	name    string
+}
+
+func getInterfaceInfo(input string) interfaceInfo {
+	result := interfaceInfo{}
+
+	s := input
+
+	lastSlash := strings.LastIndex(s, "/")
+	separatorIndex := strings.LastIndex(s, ".")
+
+	if separatorIndex > lastSlash {
+		result.pkgPath = s[:separatorIndex]
+		s = s[separatorIndex+1:]
+	} else {
+		result.pkgPath = ""
+	}
+
+	result.name = s
+	return result
+}
+
+func parse(dir string, pkg *packages.Package, iface interfaceInfo, namer Namer) []MethodInfo {
+	var methods []parsedMethod
+	if iface.pkgPath == "" {
+		methods = parseSignatures(pkg, iface.name)
+	} else {
+		cf := genlib.LoadPackagesConfig(dir)
+		pkgs, err := packages.Load(cf, iface.pkgPath)
+		if err != nil || len(pkgs) != 1 {
+			return nil
+		}
+		methods = parseSignatures(pkgs[0], iface.name)
+	}
+
 	if methods == nil {
 		return nil
 	}
