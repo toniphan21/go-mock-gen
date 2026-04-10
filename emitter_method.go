@@ -17,7 +17,7 @@ type MethodData struct {
 	Arguments             []VarInfo
 	Returns               []VarInfo
 	Lib                   LibraryData
-	SkipExpect            bool
+	OmitExpect            bool
 }
 
 func (d *MethodData) structCode() jen.Code {
@@ -25,7 +25,7 @@ func (d *MethodData) structCode() jen.Code {
 		g.Id("Calls").Index().Id(d.CallStruct)
 		g.Id("stub").Add(targetMethodSignature(d.Arguments, d.Returns))
 		g.Id("stubLocation").String()
-		if !d.SkipExpect {
+		if !d.OmitExpect {
 			g.Id("expects").Index().Op("*").Id(d.ExpectStruct)
 			g.Id("verified").Bool()
 		}
@@ -48,7 +48,7 @@ func (d *MethodData) interfaceNameFuncCode(receiver string) jen.Code {
 
 func (d *MethodData) fatalFuncCode(receiver string) jen.Code {
 	var body []jen.Code
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		body = append(body,
 			jen.Id(receiver).Dot("verified").Op("=").Lit(true),
 			jen.Id(receiver).Dot("expects").Index(jen.Id("index")).Dot("tb").Dot("Helper").Call(),
@@ -63,7 +63,7 @@ func (d *MethodData) fatalFuncCode(receiver string) jen.Code {
 
 func (d *MethodData) panicFuncCode(receiver string) jen.Code {
 	var body []jen.Code
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		body = append(body, jen.Id(receiver).Dot("verified").Op("=").Lit(true))
 	}
 	body = append(body, jen.Panic(jen.Id("msg")))
@@ -75,7 +75,7 @@ func (d *MethodData) panicFuncCode(receiver string) jen.Code {
 
 func (d *MethodData) buildCallHistoryFuncCode(receiver string) jen.Code {
 	var body []jen.Code
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		var args []jen.Code
 		for _, arg := range d.Arguments {
 			args = append(args, jen.Lit(arg.Name), jen.Id("v").Dot("Argument").Dot(arg.Field))
@@ -166,7 +166,7 @@ func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
 }
 
 func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
-	if d.SkipExpect {
+	if d.OmitExpect {
 		return nil
 	}
 
@@ -311,7 +311,7 @@ func (d *MethodData) captureFuncCode(receiver string) jen.Code {
 }
 
 func (d *MethodData) verifyFuncCode(receiver string) jen.Code {
-	if d.SkipExpect {
+	if d.OmitExpect {
 		return nil
 	}
 
@@ -361,7 +361,7 @@ func (d *MethodData) argumentStructCode() jen.Code {
 }
 
 func (d *MethodData) argumentMatcherStructCode() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -385,7 +385,7 @@ func (d *MethodData) returnStructCode() jen.Code {
 }
 
 func (d *MethodData) expectStructCode() jen.Code {
-	if d.SkipExpect {
+	if d.OmitExpect {
 		return nil
 	}
 

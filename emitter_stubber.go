@@ -10,7 +10,7 @@ type TargetStubberData struct {
 	TestDoubleStruct string
 	Methods          []MethodInfo
 	Lib              LibraryData
-	SkipExpect       bool
+	OmitExpect       bool
 }
 
 func (d *TargetStubberData) targetStubberStructCode() jen.Code {
@@ -55,7 +55,7 @@ func (d *TargetStubberData) stubCode(receiver string, method MethodInfo) jen.Cod
 		).Line(),
 	}
 
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		body = append(body,
 			jen.If(jen.Len(jen.Id(vSpy).Dot("expects")).Op(">").Lit(0)).Block(
 				jen.Id(vSpy).Dot("panic").Call(

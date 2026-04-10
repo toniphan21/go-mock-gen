@@ -14,11 +14,11 @@ func Test_MethodData_structCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
-			name: "not skip expect",
+			name: "not omit expect",
 			expected: `type targetMethod struct {
 	Calls        []targetMethodCall
 	stub         func()
@@ -30,8 +30,8 @@ func Test_MethodData_structCode(t *testing.T) {
 		},
 
 		{
-			name:       "skip expect",
-			skipExpect: true,
+			name:       "omit expect",
+			omitExpect: true,
 			expected: `type targetMethod struct {
 	Calls        []targetMethodCall
 	stub         func()
@@ -43,7 +43,7 @@ func Test_MethodData_structCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.structCode()
 			})
 
@@ -124,12 +124,12 @@ func Test_MethodData_buildCallHistoryFuncCode(t *testing.T) {
 	cases := []struct {
 		name       string
 		arguments  []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
-			name:       "no arguments, skip expect",
-			skipExpect: true,
+			name:       "no arguments, omit expect",
+			omitExpect: true,
 			expected: `import "strings"
 
 func (x *targetMethod) buildCallHistory(sb *strings.Builder, header string) {}
@@ -180,7 +180,7 @@ func (x *targetMethod) buildCallHistory(sb *strings.Builder, header string) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, nil, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, nil, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.buildCallHistoryFuncCode("x")
 			})
 
@@ -292,14 +292,14 @@ func Test_MethodData_invokeStubFuncCode(t *testing.T) {
 func Test_MethodData_invokeExpectFuncCode(t *testing.T) {
 	cases := []struct {
 		name       string
-		skipExpect bool
+		omitExpect bool
 		arguments  []VarInfo
 		returns    []VarInfo
 		expected   string
 	}{
 		{
-			name:       "skip expect",
-			skipExpect: true,
+			name:       "omit expect",
+			omitExpect: true,
 			expected:   ``,
 		},
 
@@ -470,7 +470,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.invokeExpectFuncCode("x")
 			})
 
@@ -592,7 +592,7 @@ func Test_MethodData_callStructCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
@@ -626,8 +626,8 @@ func Test_MethodData_callStructCode(t *testing.T) {
 		},
 
 		{
-			name:       "with arguments, with returns - skip expect does not affect",
-			skipExpect: true,
+			name:       "with arguments, with returns - omit expect does not affect",
+			omitExpect: true,
 			arguments:  varInfos("Ctx: ctx context.Context", "Input: input string"),
 			returns:    varInfos("First: first string", "Second: second error"),
 			expected: `type targetMethodCall struct {
@@ -641,7 +641,7 @@ func Test_MethodData_callStructCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.callStructCode()
 			})
 
@@ -655,7 +655,7 @@ func Test_MethodData_argumentStructCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
@@ -676,8 +676,8 @@ type targetMethodArgument struct {
 		},
 
 		{
-			name:       "with arguments - skip expect",
-			skipExpect: true,
+			name:       "with arguments - omit expect",
+			omitExpect: true,
 			arguments:  varInfos("Ctx: ctx context.Context", "Input: input string"),
 			expected: `import "context"
 
@@ -691,7 +691,7 @@ type targetMethodArgument struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.argumentStructCode()
 			})
 
@@ -705,7 +705,7 @@ func Test_MethodData_argumentMatcherStructCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
@@ -726,8 +726,8 @@ type targetMethodArgumentMatcher struct {
 		},
 
 		{
-			name:       "with arguments - skip expect",
-			skipExpect: true,
+			name:       "with arguments - omit expect",
+			omitExpect: true,
 			arguments:  varInfos("Ctx: ctx context.Context", "Input: input string"),
 			expected:   ``,
 		},
@@ -735,7 +735,7 @@ type targetMethodArgumentMatcher struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.argumentMatcherStructCode()
 			})
 
@@ -749,7 +749,7 @@ func Test_MethodData_returnStructCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
@@ -768,8 +768,8 @@ func Test_MethodData_returnStructCode(t *testing.T) {
 		},
 
 		{
-			name:       "has returns, skip expect does not affect",
-			skipExpect: true,
+			name:       "has returns, omit expect does not affect",
+			omitExpect: true,
 			returns:    varInfos("First: first string", "Second: second error"),
 			expected: `type targetMethodReturn struct {
 	First  string
@@ -781,7 +781,7 @@ func Test_MethodData_returnStructCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.returnStructCode()
 			})
 
@@ -795,12 +795,12 @@ func Test_MethodData_expectStructCode(t *testing.T) {
 		name       string
 		arguments  []VarInfo
 		returns    []VarInfo
-		skipExpect bool
+		omitExpect bool
 		expected   string
 	}{
 		{
-			name:       "skip expect",
-			skipExpect: true,
+			name:       "omit expect",
+			omitExpect: true,
 			expected:   ``,
 		},
 
@@ -841,7 +841,7 @@ type targetMethodExpect struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.skipExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
 				return data.expectStructCode()
 			})
 
@@ -850,7 +850,7 @@ type targetMethodExpect struct {
 	}
 }
 
-func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, skipExpect bool, fn func(data MethodData) jen.Code) string {
+func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, omitExpect bool, fn func(data MethodData) jen.Code) string {
 	data := MethodData{
 		Struct:                "targetMethod",
 		CallStruct:            "targetMethodCall",
@@ -863,7 +863,7 @@ func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, skipExpect bool, 
 		Lib:                   libData(),
 		Arguments:             arguments,
 		Returns:               returns,
-		SkipExpect:            skipExpect,
+		OmitExpect:            omitExpect,
 	}
 
 	code := fn(data)
@@ -982,7 +982,7 @@ type targetMethodExpect struct {
 		},
 
 		{
-			name: "no arguments, no returns, skip expect",
+			name: "no arguments, no returns, omit expect",
 			data: MethodData{
 				Struct:                "targetMethod",
 				CallStruct:            "targetMethodCall",
@@ -993,7 +993,7 @@ type targetMethodExpect struct {
 				Interface:             "Target",
 				Name:                  "Method",
 				Lib:                   libData(),
-				SkipExpect:            true,
+				OmitExpect:            true,
 			},
 			expected: `package emitter
 

@@ -21,7 +21,7 @@ func Test_TargetData_GenerateCode(t *testing.T) {
 		},
 
 		{
-			name: "skip constructor if it is empty",
+			name: "omit constructor if it is empty",
 			data: TargetData{
 				Interface:        "Target",
 				Struct:           "target",
@@ -330,7 +330,7 @@ func Test_TargetData_implementationCode(t *testing.T) {
 		name       string
 		receiver   string
 		location   string
-		skipExpect bool
+		omitExpect bool
 		method     MethodInfo
 		expected   string
 	}{
@@ -498,10 +498,10 @@ func (m *target) Method(ctx context.Context, input string) (err error) {
 		},
 
 		{
-			name:       "skip expect",
+			name:       "omit expect",
 			receiver:   "m",
 			location:   "location",
-			skipExpect: true,
+			omitExpect: true,
 			method: MethodInfo{
 				Name:   "Method",
 				Struct: "targetMethod",
@@ -547,7 +547,7 @@ func (m *target) Method(ctx context.Context, input string) (err error) {
 				StubberStruct:    "targetStubber",
 				ExpecterStruct:   "targetExpecter",
 				Lib:              libData(),
-				SkipExpect:       tc.skipExpect,
+				OmitExpect:       tc.omitExpect,
 				Methods:          []MethodInfo{tc.method},
 			}
 

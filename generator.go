@@ -31,6 +31,7 @@ func filterConfigs(pkg *packages.Package, configs []Config) []Config {
 			c.Namer = NewNamer(
 				getInterfaceInfo(v.InterfaceName).name,
 				WithStructName(v.StructName),
+				WithConstructorName(v.ConstructorName),
 			)
 		}
 		out = append(out, c)
@@ -156,7 +157,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 		ExpecterStruct:   targetExpecterStruct,
 		Lib:              lib,
 		Methods:          methods,
-		SkipExpect:       config.SkipExpect,
+		OmitExpect:       config.OmitExpect,
 	}))
 
 	g.collect(gf, g.emitter.Stubber(ctx, TargetStubberData{
@@ -165,7 +166,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 		TestDoubleStruct: targetTestDoubleStruct,
 		Methods:          methods,
 		Lib:              lib,
-		SkipExpect:       config.SkipExpect,
+		OmitExpect:       config.OmitExpect,
 	}))
 
 	g.collect(gf, g.emitter.Expecter(ctx, TargetExpecterData{
@@ -174,7 +175,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 		TestDoubleStruct: targetTestDoubleStruct,
 		Methods:          methods,
 		Lib:              lib,
-		SkipExpect:       config.SkipExpect,
+		OmitExpect:       config.OmitExpect,
 	}))
 
 	for _, method := range methods {
@@ -190,7 +191,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			Arguments:             method.Arguments,
 			Returns:               method.Returns,
 			Lib:                   lib,
-			SkipExpect:            config.SkipExpect,
+			OmitExpect:            config.OmitExpect,
 		}))
 
 		g.collect(gf, g.emitter.MethodExpecter(ctx, MethodExpecterData{
@@ -205,7 +206,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			Arguments:              method.Arguments,
 			Returns:                method.Returns,
 			Lib:                    lib,
-			SkipExpect:             config.SkipExpect,
+			OmitExpect:             config.OmitExpect,
 		}))
 
 		g.collect(gf, g.emitter.MethodExpecterMatch(ctx, MethodExpecterMatchData{
@@ -214,7 +215,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			ReturnStruct:        method.ReturnStruct,
 			Arguments:           method.Arguments,
 			Returns:             method.Returns,
-			SkipExpect:          config.SkipExpect,
+			OmitExpect:          config.OmitExpect,
 		}))
 
 		g.collect(gf, g.emitter.MethodExpecterMatchArg(ctx, MethodExpecterMatchArgData{
@@ -225,7 +226,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			Arguments:              method.Arguments,
 			Returns:                method.Returns,
 			Lib:                    lib,
-			SkipExpect:             config.SkipExpect,
+			OmitExpect:             config.OmitExpect,
 		}))
 
 		g.collect(gf, g.emitter.MethodExpecterValue(ctx, MethodExpecterValueData{
@@ -234,7 +235,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			ReturnStruct:        method.ReturnStruct,
 			Arguments:           method.Arguments,
 			Returns:             method.Returns,
-			SkipExpect:          config.SkipExpect,
+			OmitExpect:          config.OmitExpect,
 		}))
 
 		g.collect(gf, g.emitter.MethodExpecterValueArg(ctx, MethodExpecterValueArgData{
@@ -245,10 +246,10 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 			Arguments:              method.Arguments,
 			Returns:                method.Returns,
 			Lib:                    lib,
-			SkipExpect:             config.SkipExpect,
+			OmitExpect:             config.OmitExpect,
 		}))
 
-		if config.EmitExamples {
+		if config.EmitExample {
 			eo := g.makeExampleOutput(config.Output)
 			egf, err := g.fileManager.Make(pkg, eo.PackageName, eo.TestFileName)
 			if err != nil {
@@ -261,7 +262,7 @@ func (g *generatorImpl) generate(pkg *packages.Package, config Config, info []Me
 				MethodName:    method.Name,
 				Arguments:     method.Arguments,
 				Returns:       method.Returns,
-				SkipExpect:    config.SkipExpect,
+				OmitExpect:    config.OmitExpect,
 			}))
 		}
 	}

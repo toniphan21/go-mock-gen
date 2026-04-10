@@ -101,8 +101,8 @@ func ToConfigs(dir string, args Arguments) ([]mockgen.Config, error) {
 			},
 			InterfaceName: v,
 			StructName:    structName,
-			SkipExpect:    args.OmitExpect,
-			EmitExamples:  args.EmitExample,
+			OmitExpect:    args.OmitExpect,
+			EmitExample:   args.EmitExample,
 		})
 	}
 

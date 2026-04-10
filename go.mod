@@ -8,6 +8,7 @@ require (
 	github.com/ettle/strcase v0.2.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/tools v0.42.0
+	gopkg.in/yaml.v3 v3.0.1
 	nhatp.com/go/gen-lib v0.12.0
 )
 
@@ -17,5 +18,4 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

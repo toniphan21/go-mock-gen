@@ -18,7 +18,7 @@ func Test_Example_GenerateCode(t *testing.T) {
 				Constructor:   "testTarget",
 				InterfaceName: "Target",
 				MethodName:    "Method",
-				SkipExpect:    false,
+				OmitExpect:    false,
 			},
 			expected: `package emitter
 
@@ -65,7 +65,7 @@ func Test_Target_Method(t *testing.T) {
 				InterfaceName: "Target",
 				MethodName:    "Method",
 				Returns:       varInfos("first: first []string", "second: second error"),
-				SkipExpect:    false,
+				OmitExpect:    false,
 			},
 			expected: `package emitter
 
@@ -123,7 +123,7 @@ func Test_Target_Method(t *testing.T) {
 				InterfaceName: "Target",
 				MethodName:    "Method",
 				Arguments:     varInfos("ctx: ctx context.Context", "tenantID: tenantID string"),
-				SkipExpect:    false,
+				OmitExpect:    false,
 			},
 			expected: `package emitter
 
@@ -216,7 +216,7 @@ func Test_Target_Method(t *testing.T) {
 				MethodName:    "Method",
 				Arguments:     varInfos("ctx: ctx context.Context", "tenantID: tenantID string"),
 				Returns:       varInfos("first: first []string", "second: second error"),
-				SkipExpect:    false,
+				OmitExpect:    false,
 			},
 			expected: `package emitter
 
@@ -371,14 +371,14 @@ func Test_Target_Method(t *testing.T) {
 		},
 
 		{
-			name: "with arguments and returns but skip expect",
+			name: "with arguments and returns but omit expect",
 			data: ExampleData{
 				Constructor:   "testTarget",
 				InterfaceName: "Target",
 				MethodName:    "Method",
 				Arguments:     varInfos("ctx: ctx context.Context", "tenantID: tenantID string"),
 				Returns:       varInfos("first: first []string", "second: second error"),
-				SkipExpect:    true,
+				OmitExpect:    true,
 			},
 			expected: `package emitter
 
@@ -418,7 +418,7 @@ func Test_Target_Method(t *testing.T) {
 					{Name: "first", Field: "first", OriginalName: "first", Type: gentest.Type("[]string")},
 					{Name: "second", Field: "second", OriginalName: "second", Type: gentest.Type("error")},
 				},
-				SkipExpect: false,
+				OmitExpect: false,
 			},
 			expected: `package emitter
 

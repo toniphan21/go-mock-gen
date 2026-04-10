@@ -9,9 +9,9 @@ func Test_TargetExpecterData_GenerateCode(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "return nil if skip expect",
+			name: "return nil if omit expect",
 			data: TargetExpecterData{
-				SkipExpect: true,
+				OmitExpect: true,
 			},
 			expected: ``,
 		},

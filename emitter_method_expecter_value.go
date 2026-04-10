@@ -11,7 +11,7 @@ type MethodExpecterValueData struct {
 	ReturnStruct        string
 	Arguments           []VarInfo
 	Returns             []VarInfo
-	SkipExpect          bool
+	OmitExpect          bool
 }
 
 func (d *MethodExpecterValueData) structCode() jen.Code {
@@ -21,7 +21,7 @@ func (d *MethodExpecterValueData) structCode() jen.Code {
 }
 
 func (d *MethodExpecterValueData) GenerateCode() []jen.Code {
-	if d.SkipExpect || len(d.Returns) == 0 || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Returns) == 0 || len(d.Arguments) == 0 {
 		return nil
 	}
 

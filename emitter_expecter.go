@@ -8,7 +8,7 @@ type TargetExpecterData struct {
 	TestDoubleStruct string
 	Methods          []MethodInfo
 	Lib              LibraryData
-	SkipExpect       bool
+	OmitExpect       bool
 }
 
 func (d *TargetExpecterData) targetExpecterStructCode() jen.Code {
@@ -101,7 +101,7 @@ func (d *TargetExpecterData) expectCode(receiver string, method MethodInfo) jen.
 }
 
 func (d *TargetExpecterData) GenerateCode() []jen.Code {
-	if d.SkipExpect || len(d.Methods) == 0 {
+	if d.OmitExpect || len(d.Methods) == 0 {
 		return nil
 	}
 

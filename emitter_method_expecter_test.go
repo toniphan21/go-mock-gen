@@ -9,8 +9,8 @@ func Test_MethodExpecterData_GenerateCode(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "emit nothing if skip skip expect",
-			data: MethodExpecterData{SkipExpect: true},
+			name: "emit nothing if omit expect",
+			data: MethodExpecterData{OmitExpect: true},
 		},
 
 		{

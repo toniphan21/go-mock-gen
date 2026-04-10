@@ -1,0 +1,23 @@
+version: 1
+all:
+  output:
+    pkg_name:
+    file: mockgen_test.go
+  emit_example: false # applied for all packages, each entry can override
+  omit_expect: false  # applied for all packages, each entry can override
+
+packages:
+  github.com/you/project:
+    - Repository
+    - Service
+
+  github.com/you/project/fine-grained-control:
+    - interface: Repository
+      struct: repository
+      constructor: newRepository
+      omit_expect: false
+      emit_example: true
+      output:
+        pkg_name:
+        file: mock_repo_test.go
+    - Service # quick way, struct is unexported, constructor name is "test..."

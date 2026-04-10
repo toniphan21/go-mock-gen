@@ -29,7 +29,7 @@ func Test_TargetStubberData_GenerateCode(t *testing.T) {
 						Struct: "targetMethod",
 					},
 				},
-				SkipExpect: true,
+				OmitExpect: true,
 			},
 			expected: `package emitter
 

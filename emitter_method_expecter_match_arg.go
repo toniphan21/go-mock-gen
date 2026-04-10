@@ -62,7 +62,7 @@ type MethodExpecterMatchArgData struct {
 	Arguments              []VarInfo
 	Returns                []VarInfo
 	Lib                    LibraryData
-	SkipExpect             bool
+	OmitExpect             bool
 }
 
 func (d *MethodExpecterMatchArgData) structCode() jen.Code {
@@ -73,7 +73,7 @@ func (d *MethodExpecterMatchArgData) structCode() jen.Code {
 }
 
 func (d *MethodExpecterMatchArgData) GenerateCode() []jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 

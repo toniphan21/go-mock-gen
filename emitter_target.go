@@ -14,7 +14,7 @@ type TargetData struct {
 	ExpecterStruct   string
 	Methods          []MethodInfo
 	Lib              LibraryData
-	SkipExpect       bool
+	OmitExpect       bool
 }
 
 func (d *TargetData) constructorCode(location string) jen.Code {
@@ -119,7 +119,7 @@ func (d *TargetData) implementationCode(receiver, location string, method Method
 
 	switchBody = append(switchBody, jen.Case(jen.Id(vMock).Dot("stub").Op("!=").Nil()).Block(stubCaseBody))
 
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		switchBody = append(switchBody, jen.Case(jen.Len(jen.Id(vMock).Dot("expects")).Op(">").Lit(0)).Block(
 			jen.Id(vIndex).Op(":=").Len(jen.Id(vMock).Dot("Calls")),
 			jen.If(
@@ -186,7 +186,7 @@ func (d *TargetData) GenerateCode() []jen.Code {
 		d.targetBuiltinFuncCode(receiver, "STUB", d.StubberStruct),
 	)
 
-	if !d.SkipExpect {
+	if !d.OmitExpect {
 		code = append(code, d.targetBuiltinFuncCode(receiver, "EXPECT", d.ExpecterStruct))
 	}
 

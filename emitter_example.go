@@ -14,7 +14,7 @@ type ExampleData struct {
 	MethodName    string
 	Arguments     []VarInfo
 	Returns       []VarInfo
-	SkipExpect    bool
+	OmitExpect    bool
 	varMock       string
 	varSpy        string
 }
@@ -42,7 +42,7 @@ func (d *ExampleData) testCaseCode(name string, body []jen.Code) jen.Code {
 }
 
 func (d *ExampleData) expectCalledCode(name string, n int) jen.Code {
-	if d.SkipExpect {
+	if d.OmitExpect {
 		return nil
 	}
 
@@ -65,7 +65,7 @@ func (d *ExampleData) expectCalledCode(name string, n int) jen.Code {
 }
 
 func (d *ExampleData) expectCalledStubReturnCode() jen.Code {
-	if d.SkipExpect || len(d.Returns) == 0 {
+	if d.OmitExpect || len(d.Returns) == 0 {
 		return nil
 	}
 
@@ -89,7 +89,7 @@ func (d *ExampleData) expectCalledStubReturnCode() jen.Code {
 }
 
 func (d *ExampleData) expectAllUseValue() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func (d *ExampleData) expectAllUseValue() jen.Code {
 }
 
 func (d *ExampleData) expectAllUseValueStubReturn() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
 		return nil
 	}
 
@@ -136,7 +136,7 @@ func (d *ExampleData) expectAllUseValueStubReturn() jen.Code {
 }
 
 func (d *ExampleData) expectPartialUseValue() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -162,7 +162,7 @@ func (d *ExampleData) expectPartialUseValue() jen.Code {
 }
 
 func (d *ExampleData) expectPartialUseValueStubReturn() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func (d *ExampleData) expectPartialUseValueStubReturn() jen.Code {
 }
 
 func (d *ExampleData) expectAllUseCallback() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -213,7 +213,7 @@ func (d *ExampleData) expectAllUseCallback() jen.Code {
 }
 
 func (d *ExampleData) expectAllUseCallbackStubReturn() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
 		return nil
 	}
 
@@ -240,7 +240,7 @@ func (d *ExampleData) expectAllUseCallbackStubReturn() jen.Code {
 }
 
 func (d *ExampleData) expectPartialUseCallback() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 {
 		return nil
 	}
 
@@ -261,7 +261,7 @@ func (d *ExampleData) expectPartialUseCallback() jen.Code {
 }
 
 func (d *ExampleData) expectPartialUseCallbackStubReturn() jen.Code {
-	if d.SkipExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
+	if d.OmitExpect || len(d.Arguments) == 0 || len(d.Returns) == 0 {
 		return nil
 	}
 

@@ -60,6 +60,14 @@ func WithLibraryPrefix(prefix string) NamerOption {
 	})
 }
 
+func WithConstructorName(name string) NamerOption {
+	return namerOptionFunc(func(namer *defaultNamer) {
+		if name != "" {
+			namer.constructorName = name
+		}
+	})
+}
+
 func NewNamer(interfaceName string, options ...NamerOption) Namer {
 	n := &defaultNamer{
 		interfaceName: interfaceName,
@@ -75,9 +83,10 @@ func NewNamer(interfaceName string, options ...NamerOption) Namer {
 }
 
 type defaultNamer struct {
-	interfaceName string
-	structName    string
-	libraryPrefix string
+	interfaceName   string
+	structName      string
+	libraryPrefix   string
+	constructorName string
 }
 
 func (n *defaultNamer) Library() LibraryData {
@@ -106,6 +115,10 @@ func (n *defaultNamer) Library() LibraryData {
 }
 
 func (n *defaultNamer) Constructor() string {
+	if n.constructorName != "" {
+		return n.constructorName
+	}
+
 	isExported := toPascalCase(n.structName) == n.structName
 	if isExported {
 		return fmt.Sprintf("New%s", n.interfaceName)
