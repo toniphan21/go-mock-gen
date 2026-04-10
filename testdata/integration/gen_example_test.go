@@ -8,22 +8,6 @@ import (
 	"testing"
 )
 
-func Test_Service_VeryComplicated(t *testing.T) {
-	mock := testService()
-
-	t.Run("fine-grained control with stub signature", func(t *testing.T) {
-		mock = testService()
-		spy := mock.STUB().VeryComplicated(func(id int) error {
-			return nil
-		})
-
-		var id int
-		mock.VeryComplicated(id)
-
-		fmt.Println(spy)
-	})
-}
-
 func Test_Repository_Begin(t *testing.T) {
 	mock := testRepository()
 
@@ -360,6 +344,22 @@ func Test_Repository_GetUsers(t *testing.T) {
 		var ctx context.Context
 		var tenantID string
 		mock.GetUsers(ctx, tenantID)
+
+		fmt.Println(spy)
+	})
+}
+
+func Test_Service_VeryComplicated(t *testing.T) {
+	mock := testService()
+
+	t.Run("fine-grained control with stub signature", func(t *testing.T) {
+		mock = testService()
+		spy := mock.STUB().VeryComplicated(func(id int) error {
+			return nil
+		})
+
+		var id int
+		mock.VeryComplicated(id)
 
 		fmt.Println(spy)
 	})

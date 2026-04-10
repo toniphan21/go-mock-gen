@@ -52,7 +52,7 @@ func (*Arguments) Epilogue() string {
   go-mock-gen -i Repository -s repoMock
 
   # Generate with a custom package and output file:
-  go-mock-gen -i Repository -S Repository -p mock -o mock/mockgen_test.go
+  go-mock-gen -i Repository -s Repository -p mock -o mock/mockgen_test.go
 `
 }
 

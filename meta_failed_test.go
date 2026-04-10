@@ -1,18 +1,16 @@
 package mockgen
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"nhatp.com/go/mock-gen/internal/meta"
 )
 
 // Run this test first to generate the library output before running other tests.
@@ -44,7 +42,6 @@ func Test_GenerateCode_As_Regression_Test(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(filename)
 	goldenPath := filepath.Join(testDir, "testdata", "meta", "regression_code_generated_by_LibraryData_emitter.go")
-	fmt.Println(goldenPath)
 
 	jf := jen.NewFile("meta")
 	codes := lib.GenerateCode()
@@ -57,44 +54,9 @@ func Test_GenerateCode_As_Regression_Test(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func extractOutput(in []byte) string {
-	output := string(in)
-	lines := strings.Split(output, "\n")
-	trimmed := strings.Builder{}
-	for _, line := range lines {
-		if strings.HasPrefix(line, "=== RUN") {
-			continue
-		}
-		if strings.HasPrefix(line, "--- FAIL") {
-			continue
-		}
-		if strings.HasPrefix(line, "FAIL") {
-			continue
-		}
-		if line == "" {
-			continue
-		}
-		trimmed.WriteString(line)
-		trimmed.WriteString("\n")
-	}
-	return trimmed.String()
-}
-
-func extractPanicMessage(input string) string {
-	re := regexp.MustCompile(`(?s)panic:\s+(.*?)\s+\[recovered`)
-
-	match := re.FindStringSubmatch(input)
-
-	if len(match) > 1 {
-		return strings.TrimSpace(match[1])
-	}
-	return input
-}
-
 type metaFailedOutputTestCase struct {
 	name     string
 	test     string
-	isPanic  bool
 	expected string
 }
 
@@ -111,18 +73,13 @@ func (c *metaFailedOutputTestCase) Run(t *testing.T) {
 		t.Fatal("Expected the meta-test to fail, but it passed!")
 	}
 
-	output := extractOutput(out)
-	if c.isPanic {
-		output = extractPanicMessage(output)
-	}
-	assert.Equal(t, c.expected, output)
+	assert.Equal(t, c.expected, meta.ExtractOutput(out))
 }
 
 func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 	cases := []metaFailedOutputTestCase{
 		{
-			name:    "Test_Not_Implemented",
-			isPanic: true,
+			name: "Test_Not_Implemented",
 			expected: `unexpected call to Target.Full
 	signature: Target.Full(ctx Context, id string) ([]Result, error)
 	called at: failed_not_impl_test.go:11
@@ -136,8 +93,7 @@ func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Not_Implemented_Via_Struct",
-			isPanic: true,
+			name: "Test_Not_Implemented_Via_Struct",
 			expected: `unexpected call to Target.Full
 	signature: Target.Full(ctx Context, id string) ([]Result, error)
 	called at: failed_not_impl_test.go:17
@@ -151,8 +107,7 @@ func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Not_Implemented_Via_Another_Func",
-			isPanic: true,
+			name: "Test_Not_Implemented_Via_Another_Func",
 			expected: `unexpected call to Target.Full
 	signature: Target.Full(ctx Context, id string) ([]Result, error)
 	called at: failed_not_impl_test.go:27
@@ -177,8 +132,7 @@ func Test_MockFailureOutput_NotImplemented(t *testing.T) {
 func Test_MockFailureOutput_BadUsage(t *testing.T) {
 	cases := []metaFailedOutputTestCase{
 		{
-			name:    "Test_Use_STUB_Twice",
-			isPanic: true,
+			name: "Test_Use_STUB_Twice",
 			expected: `duplicate STUB for Target.Full
 		 first used at: failed_bad_usage_test.go:11
 		second used at: failed_bad_usage_test.go:14
@@ -187,8 +141,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Use_STUB_Thrice",
-			isPanic: true,
+			name: "Test_Use_STUB_Thrice",
 			expected: `duplicate STUB for Target.Full
 		 first used at: failed_bad_usage_test.go:22
 		second used at: failed_bad_usage_test.go:26
@@ -197,8 +150,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Use_STUB_After_EXPECT",
-			isPanic: true,
+			name: "Test_Use_STUB_After_EXPECT",
 			expected: `conflicting usage for Target.Full
 		EXPECT used at: failed_bad_usage_test.go:38
 		  STUB used at: failed_bad_usage_test.go:39
@@ -207,8 +159,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Use_EXPECT_After_STUB",
-			isPanic: true,
+			name: "Test_Use_EXPECT_After_STUB",
 			expected: `conflicting usage for Target.Full
 		  STUB used at: failed_bad_usage_test.go:47
 		EXPECT used at: failed_bad_usage_test.go:50
@@ -217,8 +168,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Pass_Nil_To_EXPECT",
-			isPanic: true,
+			name: "Test_Pass_Nil_To_EXPECT",
 			expected: `unexpected nil testing.TB in Target.Full
 		called at: failed_bad_usage_test.go:56
 	
@@ -227,8 +177,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Pass_Nil_To_STUB",
-			isPanic: true,
+			name: "Test_Pass_Nil_To_STUB",
 			expected: `Target.Full STUB received a nil function
 	called at: failed_bad_usage_test.go:62
 	
@@ -236,8 +185,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Pass_Nil_To_STUB_After_Expect",
-			isPanic: true,
+			name: "Test_Pass_Nil_To_STUB_After_Expect",
 			expected: `Target.Full STUB received a nil function
 	called at: failed_bad_usage_test.go:69
 	
@@ -252,8 +200,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Pass_Nil_To_EXPECT_After_EXPECT",
-			isPanic: true,
+			name: "Test_Pass_Nil_To_EXPECT_After_EXPECT",
 			expected: `unexpected nil testing.TB in Target.Full
 		called at: failed_bad_usage_test.go:82
 	
@@ -273,8 +220,7 @@ func Test_MockFailureOutput_BadUsage(t *testing.T) {
 func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 	cases := []metaFailedOutputTestCase{
 		{
-			name:    "Test_One_EXPECT_Call_Twice",
-			isPanic: true,
+			name: "Test_One_EXPECT_Call_Twice",
 			expected: `too many calls to Target.Full
 		want: 1, got: 2
 	
@@ -295,8 +241,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Two_EXPECT_Call_Thrice",
-			isPanic: true,
+			name: "Test_Two_EXPECT_Call_Thrice",
 			expected: `too many calls to Target.Full
 		want: 2, got: 3
 	
@@ -323,8 +268,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 		},
 
 		{
-			name:    "Test_One_EXPECT_Call_Twice_In_Production",
-			isPanic: true,
+			name: "Test_One_EXPECT_Call_Twice_In_Production",
 			expected: `too many calls to Target.Full
 		want: 1, got: 2
 	
@@ -345,8 +289,7 @@ func Test_MockFailureOutput_CalledMoreThanExpected(t *testing.T) {
 		},
 
 		{
-			name:    "Test_Two_EXPECT_Call_Thrice_In_Production",
-			isPanic: true,
+			name: "Test_Two_EXPECT_Call_Thrice_In_Production",
 			expected: `too many calls to Target.Full
 		want: 2, got: 3
 	

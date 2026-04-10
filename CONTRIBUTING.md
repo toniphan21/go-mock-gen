@@ -71,7 +71,7 @@ all direct dependencies are automatically installed
 ````
 
 to test CLI option use a bash codeblock with `// file: generate.sh` on top. The test will parse option after the main
-command. The bash script never be executed so there is no attack surface. For example:
+command. The bash script is never executed so there is no attack surface. For example:
 
 ````
 ```bash
@@ -84,7 +84,7 @@ go run nhatp.com/go/mock-gen/cmd/go-mock-gen \
 ```
 ````
 
-the same format applied for the source file:
+the same format is applied for the source file:
 ````
 ```go
 // file: input.go
@@ -97,12 +97,56 @@ the same format applied for the source file:
 for the expected golden-file use `// golden-file: <relative-path>`, for example
 ````
 ```go
-// golden-file: gen_chainer.go
+// golden-file: mockgen_test.go
 
 ...put your expected generated code here...
 
 ```
 ````
+
+if you do not care about generated content, only want to test the behavior, first you need to ignore the golden file
+````
+```go
+// golden-file: mockgen_test.go
+// ignored-content
+
+package domain
+```
+````
+
+then add test code via file
+````
+```go
+// file: input_test.go
+
+package domain
+
+import (
+	"testing"
+)
+
+func Test_Behavior_Fail(t *testing.T) { // test name will be used in === RUN below
+	mock := testVirtualMachine()
+	mock.EXPECT().Start(t)
+
+	// do not call to make the test failed
+}
+
+func Test_Behavior_Pass(t *testing.T) { // test name will be used in === RUN below
+}
+```
+````
+
+and create an expected test result file to expect the tests results
+```txt
+// file: expected_test_result.txt
+=== RUN  Test_Behavior_Fail
+    this is expected failed message
+--- FAIL
+
+=== RUN  Test_Behavior_Pass
+--- PASS
+```
 
 ## Collaboration
 

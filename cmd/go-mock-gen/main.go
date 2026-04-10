@@ -176,7 +176,15 @@ func test(cmd *cli.TestRunner) {
 		}
 
 		var opts []mockgen.Option
-		return gtc.ExecuteMockGen(dir, configs, opts...)
+		result, err := gtc.ExecuteMockGen(dir, configs, opts...)
+		for _, executedTest := range gtc.ExecutedTests {
+			cmd.PrintSetup(fmt.Sprintf(
+				"\texecuted test %s and verified matched with %s",
+				cli.ColorWhite(executedTest[1]),
+				cli.ColorWhite(executedTest[0]),
+			))
+		}
+		return result, err
 	}
 	cmd.Run()
 }

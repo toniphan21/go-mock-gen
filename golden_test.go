@@ -22,7 +22,7 @@ func TestGoldenFiles_Dev(t *testing.T) {
 	cases := []struct {
 		file string
 	}{
-		{file: "testdata/no-arg-no-return.md"},
+		{file: "testdata/integration-test.md"},
 	}
 
 	for _, tc := range cases {
