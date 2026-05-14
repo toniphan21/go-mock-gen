@@ -11,7 +11,7 @@ func targetMethodExpecterReturnCode(receiverName, receiverType, targetMethodRetu
 	var params []jen.Code
 	var values []jen.Code
 	for _, v := range returns {
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		values = append(values, jen.Id(v.Field).Op(":").Id(v.Name))
 	}
 
@@ -83,11 +83,11 @@ func (d *MethodExpecterData) withFuncCode(receiver string) jen.Code {
 		if d.Variadic && i == len(d.Arguments)-1 {
 			at, ok := v.Type.(*types.Slice)
 			if ok {
-				params = append(params, jen.Id(v.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())))
+				params = append(params, jen.Id(v.Name).Op("...").Add(genlibTypeToJenCode(at.Elem())))
 				continue
 			}
 		}
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 	}
 
 	for _, v := range d.Arguments {

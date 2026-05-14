@@ -104,9 +104,9 @@ func variadicVarInfoSignature(variadicArg VarInfo) (jen.Code, bool) {
 	}
 
 	if variadicArg.Name == "" {
-		return jen.Op("...").Add(genlib.TypeToJenCode(at.Elem())), true
+		return jen.Op("...").Add(genlibTypeToJenCode(at.Elem())), true
 	}
-	return jen.Id(variadicArg.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())), true
+	return jen.Id(variadicArg.Name).Op("...").Add(genlibTypeToJenCode(at.Elem())), true
 }
 
 func targetMethodSignature(method methodSignature) jen.Code {
@@ -121,17 +121,17 @@ func targetMethodSignature(method methodSignature) jen.Code {
 		}
 
 		if v.Name == "" {
-			params = append(params, genlib.TypeToJenCode(v.Type))
+			params = append(params, genlibTypeToJenCode(v.Type))
 		} else {
-			params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+			params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		}
 	}
 
 	for _, v := range method.returns {
 		if v.OriginalName == "" {
-			results = append(results, genlib.TypeToJenCode(v.Type))
+			results = append(results, genlibTypeToJenCode(v.Type))
 		} else {
-			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			results = append(results, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 		}
 	}
 
@@ -157,9 +157,9 @@ func targetMethodMatcherSignature(variadic bool, args ...VarInfo) jen.Code {
 		}
 
 		if v.Name == "" {
-			params = append(params, genlib.TypeToJenCode(v.Type))
+			params = append(params, genlibTypeToJenCode(v.Type))
 		} else {
-			params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+			params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		}
 	}
 	return jen.Func().Params(params...).Params(jen.Bool())

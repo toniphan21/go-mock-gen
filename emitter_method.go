@@ -133,7 +133,7 @@ func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
 	nm := genlib.NewNameManager("v", nil)
 	nm.Reserve(receiver)
 	for i, v := range d.Arguments {
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		nm.Reserve(v.Name)
 
 		if d.Variadic && i == len(d.Arguments)-1 {
@@ -146,10 +146,10 @@ func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
 
 	for _, v := range d.Returns {
 		if v.OriginalName != "" {
-			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			results = append(results, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 			nm.Reserve(v.OriginalName)
 		} else {
-			results = append(results, genlib.TypeToJenCode(v.Type))
+			results = append(results, genlibTypeToJenCode(v.Type))
 		}
 	}
 
@@ -188,7 +188,7 @@ func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
 	nm := genlib.NewNameManager("v", nil)
 	nm.Reserve(receiver)
 	for i, v := range d.Arguments {
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		args = append(args, jen.Lit(v.Name))
 		args = append(args, jen.Id(v.Name))
 		if d.Variadic && i == len(d.Arguments)-1 {
@@ -200,10 +200,10 @@ func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
 	}
 	for _, v := range d.Returns {
 		if v.OriginalName != "" {
-			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			results = append(results, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 			nm.Reserve(v.OriginalName)
 		} else {
-			results = append(results, genlib.TypeToJenCode(v.Type))
+			results = append(results, genlibTypeToJenCode(v.Type))
 		}
 	}
 
@@ -293,9 +293,9 @@ func (d *MethodData) captureFuncCode(receiver string) jen.Code {
 
 	for _, v := range d.Returns {
 		if v.OriginalName != "" {
-			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			results = append(results, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 		} else {
-			results = append(results, genlib.TypeToJenCode(v.Type))
+			results = append(results, genlibTypeToJenCode(v.Type))
 		}
 		returns = append(returns, jen.Id("returns").Dot(v.Field))
 	}
@@ -372,7 +372,7 @@ func (d *MethodData) argumentStructCode() jen.Code {
 
 	return jen.Type().Id(d.ArgumentStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Arguments {
-			g.Id(v.Field).Add(genlib.TypeToJenCode(v.Type))
+			g.Id(v.Field).Add(genlibTypeToJenCode(v.Type))
 		}
 	}).Line()
 }
@@ -396,7 +396,7 @@ func (d *MethodData) returnStructCode() jen.Code {
 
 	return jen.Type().Id(d.ReturnStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Returns {
-			g.Id(v.Field).Add(genlib.TypeToJenCode(v.Type))
+			g.Id(v.Field).Add(genlibTypeToJenCode(v.Type))
 		}
 	}).Line()
 }

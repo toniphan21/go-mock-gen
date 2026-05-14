@@ -8,7 +8,7 @@ import (
 func targetMethodExpecterMatchArgCode(receiverName, receiverType string, returnedCode jen.Code, returnedType string, lib *LibraryData, info VarInfo, checkNil bool) jen.Code {
 	fn := "Match" + toPascalCase(info.Name)
 
-	param := jen.Id("matcher").Func().Params(jen.Id(info.Name).Add(genlib.TypeToJenCode(info.Type))).Bool()
+	param := jen.Id("matcher").Func().Params(jen.Id(info.Name).Add(genlibTypeToJenCode(info.Type))).Bool()
 
 	body := []jen.Code{
 		jen.If(jen.Id("matcher").Op("==").Nil()).Block(

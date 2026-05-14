@@ -46,7 +46,7 @@ func targetMethodExpecterValueArgCode(receiverName, receiverType string, returne
 	)
 
 	return jen.Func().Params(jen.Id(receiverName).Op("*").Id(receiverType)).
-		Id(fn).Params(jen.Id(info.Name).Add(genlib.TypeToJenCode(info.Type))).Op("*").Id(returnedType).
+		Id(fn).Params(jen.Id(info.Name).Add(genlibTypeToJenCode(info.Type))).Op("*").Id(returnedType).
 		Block(body...).
 		Line()
 }

@@ -74,19 +74,19 @@ func (d *TargetData) implementationCode(receiver, location string, method Method
 		if method.Variadic && i == len(method.Arguments)-1 {
 			at, ok := v.Type.(*types.Slice)
 			if ok {
-				params = append(params, jen.Id(v.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())))
+				params = append(params, jen.Id(v.Name).Op("...").Add(genlibTypeToJenCode(at.Elem())))
 				continue
 			}
 		}
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 	}
 
 	for _, v := range method.Returns {
 		if v.OriginalName != "" {
-			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			results = append(results, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 			nm.Reserve(v.OriginalName)
 		} else {
-			results = append(results, genlib.TypeToJenCode(v.Type))
+			results = append(results, genlibTypeToJenCode(v.Type))
 		}
 	}
 	vInterface := nm.Next()

@@ -22,12 +22,12 @@ type ExampleData struct {
 
 func (d *ExampleData) argumentsAndReturnsCode() (args, argIds, returns, returnIds, rets []jen.Code) {
 	for _, v := range d.Arguments {
-		args = append(args, jen.Var().Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		args = append(args, jen.Var().Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		argIds = append(argIds, jen.Id(v.Name))
 	}
 
 	for i, v := range d.Returns {
-		returns = append(returns, jen.Var().Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		returns = append(returns, jen.Var().Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		returnIds = append(returnIds, jen.Id(v.Name))
 		rets = append(rets, jen.Id("ret"+strconv.Itoa(i)))
 	}
@@ -49,7 +49,7 @@ func (d *ExampleData) expectCalledCode(name string, n int) jen.Code {
 
 	var args, argIds []jen.Code
 	for _, v := range d.Arguments {
-		args = append(args, jen.Var().Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		args = append(args, jen.Var().Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		argIds = append(argIds, jen.Id(v.Name))
 	}
 
@@ -291,15 +291,15 @@ func (d *ExampleData) expectPartialUseCallbackStubReturn() jen.Code {
 func (d *ExampleData) stubCode() jen.Code {
 	var args, argIds, params, result []jen.Code
 	for _, v := range d.Arguments {
-		args = append(args, jen.Var().Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		args = append(args, jen.Var().Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 		argIds = append(argIds, jen.Id(v.Name))
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+		params = append(params, jen.Id(v.Name).Add(genlibTypeToJenCode(v.Type)))
 	}
 	for _, v := range d.Returns {
 		if v.OriginalName != "" {
-			result = append(result, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))
+			result = append(result, jen.Id(v.OriginalName).Add(genlibTypeToJenCode(v.Type)))
 		} else {
-			result = append(result, genlib.TypeToJenCode(v.Type))
+			result = append(result, genlibTypeToJenCode(v.Type))
 		}
 	}
 
