@@ -12,6 +12,7 @@ type ExampleData struct {
 	Constructor   string
 	InterfaceName string
 	MethodName    string
+	Variadic      bool
 	Arguments     []VarInfo
 	Returns       []VarInfo
 	OmitExpect    bool
@@ -203,7 +204,7 @@ func (d *ExampleData) expectAllUseCallback() jen.Code {
 	var body []jen.Code
 	body = append(body,
 		jen.Id(d.varMock).Dot("EXPECT").Call().Dot(d.MethodName).Call(jen.Id("t")).
-			Dot("Match").Call(jen.Add(targetMethodMatcherSignature(d.Arguments...)).Add(jen.Block(jen.Return(jen.Lit(true))))),
+			Dot("Match").Call(jen.Add(targetMethodMatcherSignature(d.Variadic, d.Arguments...)).Add(jen.Block(jen.Return(jen.Lit(true))))),
 		jen.Line(),
 	)
 	body = append(body, args...)
@@ -224,7 +225,7 @@ func (d *ExampleData) expectAllUseCallbackStubReturn() jen.Code {
 	body = append(body, jen.Line())
 	body = append(body,
 		jen.Id(d.varMock).Dot("EXPECT").Call().Dot(d.MethodName).Call(jen.Id("t")).
-			Dot("Match").Call(jen.Add(targetMethodMatcherSignature(d.Arguments...)).Add(jen.Block(jen.Return(jen.Lit(true))))).
+			Dot("Match").Call(jen.Add(targetMethodMatcherSignature(d.Variadic, d.Arguments...)).Add(jen.Block(jen.Return(jen.Lit(true))))).
 			Dot("Return").Call(returnIds...),
 		jen.Line(),
 	)
@@ -250,7 +251,7 @@ func (d *ExampleData) expectPartialUseCallback() jen.Code {
 	body = append(body,
 		jen.Id(d.varMock).Dot("EXPECT").Call().Dot(d.MethodName).Call(jen.Id("t")).
 			Dot("Match"+toPascalCase(d.Arguments[0].Name)).
-			Call(jen.Add(targetMethodMatcherSignature(d.Arguments[0])).Add(jen.Block(jen.Return(jen.Lit(true))))),
+			Call(jen.Add(targetMethodMatcherSignatureForArg(d.Arguments[0])).Add(jen.Block(jen.Return(jen.Lit(true))))),
 		jen.Line(),
 	)
 
@@ -273,7 +274,7 @@ func (d *ExampleData) expectPartialUseCallbackStubReturn() jen.Code {
 	body = append(body,
 		jen.Id(d.varMock).Dot("EXPECT").Call().Dot(d.MethodName).Call(jen.Id("t")).
 			Dot("Match"+toPascalCase(d.Arguments[0].Name)).
-			Call(jen.Add(targetMethodMatcherSignature(d.Arguments[0])).Add(jen.Block(jen.Return(jen.Lit(true))))).
+			Call(jen.Add(targetMethodMatcherSignatureForArg(d.Arguments[0])).Add(jen.Block(jen.Return(jen.Lit(true))))).
 			Dot("Return").Call(returnIds...),
 		jen.Line(),
 	)

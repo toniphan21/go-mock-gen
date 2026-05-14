@@ -22,6 +22,7 @@ type VarInfo struct {
 
 type MethodInfo struct {
 	Name                   string
+	Variadic               bool
 	Struct                 string
 	CallStruct             string
 	ArgumentStruct         string
@@ -37,14 +38,30 @@ type MethodInfo struct {
 	Returns                []VarInfo
 }
 
+func (m *MethodInfo) methodSignature() methodSignature {
+	return methodSignature{
+		variadic:  m.Variadic,
+		arguments: m.Arguments,
+		returns:   m.Returns,
+	}
+}
+
 func targetMethodSignatureString(method MethodInfo) string {
 	signature := strings.Builder{}
 	if len(method.Arguments) > 0 {
 		signature.WriteRune('(')
 		var strArgs []string
-		for _, v := range method.Arguments {
+		for i, v := range method.Arguments {
+			if method.Variadic && i == len(method.Arguments)-1 {
+				at, ok := v.Type.(*types.Slice)
+				if ok {
+					strArgs = append(strArgs, v.Name+" ..."+genlib.TypeSimpleName(at.Elem()))
+					continue
+				}
+			}
 			strArgs = append(strArgs, v.Name+" "+genlib.TypeSimpleName(v.Type))
 		}
+
 		signature.WriteString(strings.Join(strArgs, ", "))
 		signature.WriteRune(')')
 	} else {
@@ -74,10 +91,35 @@ func targetMethodSignatureString(method MethodInfo) string {
 	return signature.String()
 }
 
-func targetMethodSignature(arguments []VarInfo, returns []VarInfo) jen.Code {
+type methodSignature struct {
+	variadic  bool
+	arguments []VarInfo
+	returns   []VarInfo
+}
+
+func variadicVarInfoSignature(variadicArg VarInfo) (jen.Code, bool) {
+	at, ok := variadicArg.Type.(*types.Slice)
+	if !ok {
+		return nil, false
+	}
+
+	if variadicArg.Name == "" {
+		return jen.Op("...").Add(genlib.TypeToJenCode(at.Elem())), true
+	}
+	return jen.Id(variadicArg.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())), true
+}
+
+func targetMethodSignature(method methodSignature) jen.Code {
 	var params, results []jen.Code
 
-	for _, v := range arguments {
+	for i, v := range method.arguments {
+		if method.variadic && i == len(method.arguments)-1 {
+			if c, ok := variadicVarInfoSignature(v); ok {
+				params = append(params, c)
+				continue
+			}
+		}
+
 		if v.Name == "" {
 			params = append(params, genlib.TypeToJenCode(v.Type))
 		} else {
@@ -85,7 +127,7 @@ func targetMethodSignature(arguments []VarInfo, returns []VarInfo) jen.Code {
 		}
 	}
 
-	for _, v := range returns {
+	for _, v := range method.returns {
 		if v.OriginalName == "" {
 			results = append(results, genlib.TypeToJenCode(v.Type))
 		} else {
@@ -96,13 +138,24 @@ func targetMethodSignature(arguments []VarInfo, returns []VarInfo) jen.Code {
 	return jen.Func().Params(params...).Params(results...)
 }
 
-func targetMethodMatcherSignature(args ...VarInfo) jen.Code {
+func targetMethodMatcherSignatureForArg(arg VarInfo) jen.Code {
+	return targetMethodMatcherSignature(false, arg)
+}
+
+func targetMethodMatcherSignature(variadic bool, args ...VarInfo) jen.Code {
 	var params []jen.Code
 
 	if len(args) == 0 {
 		return nil
 	}
-	for _, v := range args {
+	for i, v := range args {
+		if variadic && i == len(args)-1 {
+			if c, ok := variadicVarInfoSignature(v); ok {
+				params = append(params, c)
+				continue
+			}
+		}
+
 		if v.Name == "" {
 			params = append(params, genlib.TypeToJenCode(v.Type))
 		} else {

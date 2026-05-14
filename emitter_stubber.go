@@ -76,7 +76,7 @@ func (d *TargetStubberData) stubCode(receiver string, method MethodInfo) jen.Cod
 	return jen.Func().
 		Params(jen.Id(receiver).Op("*").Id(d.StubberStruct)).
 		Id(method.Name).
-		Params(jen.Id("stub").Add(targetMethodSignature(method.Arguments, method.Returns))).
+		Params(jen.Id("stub").Add(targetMethodSignature(method.methodSignature()))).
 		Op("*").Id(method.Struct).
 		Block(body...).Line()
 }

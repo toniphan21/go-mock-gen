@@ -14,16 +14,25 @@ type MethodData struct {
 	ExpectStruct          string
 	Interface             string
 	Name                  string
+	Variadic              bool
 	Arguments             []VarInfo
 	Returns               []VarInfo
 	Lib                   LibraryData
 	OmitExpect            bool
 }
 
+func (d *MethodData) methodSignature() methodSignature {
+	return methodSignature{
+		variadic:  d.Variadic,
+		arguments: d.Arguments,
+		returns:   d.Returns,
+	}
+}
+
 func (d *MethodData) structCode() jen.Code {
 	return jen.Type().Id(d.Struct).StructFunc(func(g *jen.Group) {
 		g.Id("Calls").Index().Id(d.CallStruct)
-		g.Id("stub").Add(targetMethodSignature(d.Arguments, d.Returns))
+		g.Id("stub").Add(targetMethodSignature(d.methodSignature()))
 		g.Id("stubLocation").String()
 		if !d.OmitExpect {
 			g.Id("expects").Index().Op("*").Id(d.ExpectStruct)
@@ -367,7 +376,7 @@ func (d *MethodData) argumentMatcherStructCode() jen.Code {
 
 	return jen.Type().Id(d.ArgumentMatcherStruct).StructFunc(func(g *jen.Group) {
 		for _, v := range d.Arguments {
-			g.Id(v.Name).Add(targetMethodMatcherSignature(v))
+			g.Id(v.Name).Add(targetMethodMatcherSignatureForArg(v))
 		}
 	}).Line()
 }
@@ -391,7 +400,7 @@ func (d *MethodData) expectStructCode() jen.Code {
 
 	return jen.Type().Id(d.ExpectStruct).StructFunc(func(g *jen.Group) {
 		if len(d.Arguments) > 0 {
-			g.Id("match").Add(targetMethodMatcherSignature(d.Arguments...))
+			g.Id("match").Add(targetMethodMatcherSignature(d.Variadic, d.Arguments...))
 			g.Id("matchLocation").String()
 			g.Id("matcher").Op("*").Id(d.ArgumentMatcherStruct)
 			g.Id("matcherWants").Map(jen.String()).Any()

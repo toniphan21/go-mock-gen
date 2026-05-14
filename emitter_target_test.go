@@ -535,6 +535,46 @@ func (m *target) Method(ctx context.Context, input string) (err error) {
 }
 `,
 		},
+
+		{
+			name:       "variadic function",
+			receiver:   "m",
+			location:   "location",
+			omitExpect: true,
+			method: MethodInfo{
+				Name:     "Method",
+				Variadic: true,
+				Struct:   "targetMethod",
+				Arguments: []VarInfo{
+					{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+					{Name: "input", Field: "input", OriginalName: "input", Type: gentest.Type("[]string")},
+				},
+				Returns: []VarInfo{
+					{Name: "first", Field: "first", OriginalName: "err", Type: gentest.Type("error")},
+				},
+			},
+			expected: `package emitter
+
+import "context"
+
+func (m *target) Method(ctx context.Context, input ...string) (err error) {
+	v0, v1, v2 := "Target", "Method", "(ctx Context, input ...string) (err error)"
+	v3 := []any{"ctx", ctx, "input", input}
+
+	if m.td == nil {
+		panic(libMessageNotImplemented(v0, v1, v2, "", v3))
+	}
+
+	if v4 := m.td.Method; v4 != nil {
+		switch {
+		case v4.stub != nil:
+			return v4.invokeStub(ctx, input)
+		}
+	}
+	panic(libMessageNotImplemented(v0, v1, v2, m.td.location, v3))
+}
+`,
+		},
 	}
 
 	for _, tc := range cases {

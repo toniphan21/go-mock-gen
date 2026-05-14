@@ -1,6 +1,8 @@
 package mockgen
 
 import (
+	"go/types"
+
 	"github.com/dave/jennifer/jen"
 	genlib "nhatp.com/go/gen-lib"
 )
@@ -67,10 +69,18 @@ func (d *TargetData) implementationCode(receiver, location string, method Method
 
 	nm := genlib.NewNameManager("v", nil)
 	nm.Reserve(receiver)
-	for _, v := range method.Arguments {
-		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+	for i, v := range method.Arguments {
 		nm.Reserve(v.Name)
+		if method.Variadic && i == len(method.Arguments)-1 {
+			at, ok := v.Type.(*types.Slice)
+			if ok {
+				params = append(params, jen.Id(v.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())))
+				continue
+			}
+		}
+		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
 	}
+
 	for _, v := range method.Returns {
 		if v.OriginalName != "" {
 			results = append(results, jen.Id(v.OriginalName).Add(genlib.TypeToJenCode(v.Type)))

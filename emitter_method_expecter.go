@@ -1,6 +1,8 @@
 package mockgen
 
 import (
+	"go/types"
+
 	"github.com/dave/jennifer/jen"
 	genlib "nhatp.com/go/gen-lib"
 )
@@ -32,6 +34,7 @@ type MethodExpecterData struct {
 	ExpecterValueArgStruct string
 	Struct                 string
 	ReturnStruct           string
+	Variadic               bool
 	Arguments              []VarInfo
 	Returns                []VarInfo
 	Lib                    LibraryData
@@ -49,7 +52,7 @@ func (d *MethodExpecterData) structCode() jen.Code {
 }
 
 func (d *MethodExpecterData) matchFuncCode(receiver string) jen.Code {
-	var signature = targetMethodMatcherSignature(d.Arguments...)
+	var signature = targetMethodMatcherSignature(d.Variadic, d.Arguments...)
 
 	return jen.Func().
 		Params(jen.Id(receiver).Op("*").Id(d.ExpecterStruct)).
@@ -76,9 +79,18 @@ func (d *MethodExpecterData) matchFuncCode(receiver string) jen.Code {
 
 func (d *MethodExpecterData) withFuncCode(receiver string) jen.Code {
 	var params, body []jen.Code
-	for _, v := range d.Arguments {
+	for i, v := range d.Arguments {
+		if d.Variadic && i == len(d.Arguments)-1 {
+			at, ok := v.Type.(*types.Slice)
+			if ok {
+				params = append(params, jen.Id(v.Name).Op("...").Add(genlib.TypeToJenCode(at.Elem())))
+				continue
+			}
+		}
 		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
+	}
 
+	for _, v := range d.Arguments {
 		fn := "With" + toPascalCase(v.Name)
 
 		body = append(body, jen.Id(receiver).Dot(fn).Call(jen.Id(v.Name)))

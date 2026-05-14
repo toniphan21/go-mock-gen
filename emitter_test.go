@@ -154,6 +154,22 @@ func Test_targetMethodSignatureString(t *testing.T) {
 			},
 			expected: "(ctx Context, input string) (string, error)",
 		},
+
+		{
+			name: "variadic function",
+			method: MethodInfo{
+				Variadic: true,
+				Arguments: []VarInfo{
+					{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+					{Name: "inputs", Field: "inputs", OriginalName: "inputs", Type: gentest.Type("[]string")},
+				},
+				Returns: []VarInfo{
+					{Name: "first", Field: "first", OriginalName: "", Type: gentest.Type("string")},
+					{Name: "second", Field: "second", OriginalName: "", Type: gentest.Type("error")},
+				},
+			},
+			expected: "(ctx Context, inputs ...string) (string, error)",
+		},
 	}
 
 	for _, tc := range cases {
@@ -167,6 +183,7 @@ func Test_targetMethodSignatureString(t *testing.T) {
 func Test_targetMethodSignature(t *testing.T) {
 	cases := []struct {
 		name      string
+		variadic  bool
 		arguments []VarInfo
 		returns   []VarInfo
 		expected  string
@@ -261,11 +278,39 @@ func Test_targetMethodSignature(t *testing.T) {
 			},
 			expected: `import "context"` + "\n\n" + "var out func(ctx context.Context, input string) (string, error)",
 		},
+
+		{
+			name:     "variadic, has 2 unnamed arguments, 2 returns",
+			variadic: true,
+			arguments: []VarInfo{
+				{Name: "", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+				{Name: "", Field: "input", OriginalName: "input", Type: gentest.Type("[]string")},
+			},
+			returns: []VarInfo{
+				{Name: "first", Field: "first", OriginalName: "", Type: gentest.Type("string")},
+				{Name: "second", Field: "second", OriginalName: "", Type: gentest.Type("error")},
+			},
+			expected: `import "context"` + "\n\n" + "var out func(context.Context, ...string) (string, error)",
+		},
+
+		{
+			name:     "variadic, has 2 named arguments, 2 returns",
+			variadic: true,
+			arguments: []VarInfo{
+				{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+				{Name: "input", Field: "input", OriginalName: "input", Type: gentest.Type("[]string")},
+			},
+			returns: []VarInfo{
+				{Name: "first", Field: "first", OriginalName: "", Type: gentest.Type("string")},
+				{Name: "second", Field: "second", OriginalName: "", Type: gentest.Type("error")},
+			},
+			expected: `import "context"` + "\n\n" + "var out func(ctx context.Context, input ...string) (string, error)",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			code := targetMethodSignature(tc.arguments, tc.returns)
+			code := targetMethodSignature(methodSignature{tc.variadic, tc.arguments, tc.returns})
 			require.NotNil(t, code)
 
 			jf := jen.NewFile("emitter")
@@ -279,6 +324,7 @@ func Test_targetMethodSignature(t *testing.T) {
 func Test_targetMethodMatcherSignature(t *testing.T) {
 	cases := []struct {
 		name      string
+		variadic  bool
 		arguments []VarInfo
 		expected  string
 	}{
@@ -312,11 +358,31 @@ func Test_targetMethodMatcherSignature(t *testing.T) {
 			},
 			expected: `import "context"` + "\n\n" + `var out func(ctx context.Context, input string) bool`,
 		},
+
+		{
+			name:     "variadic, has 2 arguments",
+			variadic: true,
+			arguments: []VarInfo{
+				{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+				{Name: "input", Field: "input", OriginalName: "input", Type: gentest.Type("[]string")},
+			},
+			expected: `import "context"` + "\n\n" + `var out func(ctx context.Context, input ...string) bool`,
+		},
+
+		{
+			name:     "variadic, but last arg is not a slice",
+			variadic: true,
+			arguments: []VarInfo{
+				{Name: "ctx", Field: "ctx", OriginalName: "ctx", Type: gentest.Type("context.Context")},
+				{Name: "input", Field: "input", OriginalName: "input", Type: gentest.Type("string")},
+			},
+			expected: `import "context"` + "\n\n" + `var out func(ctx context.Context, input string) bool`,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			code := targetMethodMatcherSignature(tc.arguments...)
+			code := targetMethodMatcherSignature(tc.variadic, tc.arguments...)
 			if tc.expected == "" {
 				assert.Nil(t, code)
 				return

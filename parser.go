@@ -10,6 +10,7 @@ import (
 
 type parsedMethod struct {
 	name      string
+	variadic  bool
 	arguments []*types.Var
 	results   []*types.Var
 }
@@ -60,6 +61,7 @@ func parse(dir string, pkg *packages.Package, iface interfaceInfo, namer Namer) 
 		m := namer.Method(method.name)
 		info := &MethodInfo{
 			Name:                   method.name,
+			Variadic:               method.variadic,
 			Struct:                 m.Struct(),
 			CallStruct:             m.Call(),
 			ArgumentStruct:         m.Argument(),
@@ -118,6 +120,7 @@ func parseSignatures(pkg *packages.Package, interfaceName string) []parsedMethod
 
 		currentMethod := parsedMethod{
 			name:      m.Name(),
+			variadic:  sig.Variadic(),
 			arguments: extractVars(sig.Params()),
 			results:   extractVars(sig.Results()),
 		}
