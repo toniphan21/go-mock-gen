@@ -132,11 +132,15 @@ func (d *MethodData) invokeStubFuncCode(receiver string) jen.Code {
 
 	nm := genlib.NewNameManager("v", nil)
 	nm.Reserve(receiver)
-	for _, v := range d.Arguments {
+	for i, v := range d.Arguments {
 		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
 		nm.Reserve(v.Name)
 
-		passed = append(passed, jen.Id(v.Name))
+		if d.Variadic && i == len(d.Arguments)-1 {
+			passed = append(passed, jen.Id(v.Name).Op("..."))
+		} else {
+			passed = append(passed, jen.Id(v.Name))
+		}
 		argumentFields = append(argumentFields, jen.Id(v.Field).Op(":").Id(v.Name))
 	}
 
@@ -183,11 +187,15 @@ func (d *MethodData) invokeExpectFuncCode(receiver string) jen.Code {
 
 	nm := genlib.NewNameManager("v", nil)
 	nm.Reserve(receiver)
-	for _, v := range d.Arguments {
+	for i, v := range d.Arguments {
 		params = append(params, jen.Id(v.Name).Add(genlib.TypeToJenCode(v.Type)))
 		args = append(args, jen.Lit(v.Name))
 		args = append(args, jen.Id(v.Name))
-		argIds = append(argIds, jen.Id(v.Name))
+		if d.Variadic && i == len(d.Arguments)-1 {
+			argIds = append(argIds, jen.Id(v.Name).Op("..."))
+		} else {
+			argIds = append(argIds, jen.Id(v.Name))
+		}
 		nm.Reserve(v.Name)
 	}
 	for _, v := range d.Returns {

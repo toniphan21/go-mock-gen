@@ -417,7 +417,7 @@ func (m *variadicFuncApply) buildCallHistory(sb *strings.Builder, header string)
 }
 
 func (m *variadicFuncApply) invokeStub(options []Option) {
-	m.stub(options)
+	m.stub(options...)
 	m.capture(variadicFuncApplyArgument{options: options})
 }
 
@@ -430,7 +430,7 @@ func (m *variadicFuncApply) invokeExpect(options []Option) {
 	}
 
 	v2 := m.expects[v1]
-	if v2.match != nil && !v2.match(options) {
+	if v2.match != nil && !v2.match(options...) {
 		v2.tb.Helper()
 		m.fatal(v1, mockgenMessageMatchFail(m, v2.matchLocation, v1, v0))
 	}

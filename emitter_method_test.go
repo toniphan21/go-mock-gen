@@ -9,14 +9,17 @@ import (
 	"nhatp.com/go/gen-lib/gentest"
 )
 
+type methodDataTestCase struct {
+	name       string
+	variadic   bool
+	arguments  []VarInfo
+	returns    []VarInfo
+	omitExpect bool
+	expected   string
+}
+
 func Test_MethodData_structCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name: "not omit expect",
 			expected: `type targetMethod struct {
@@ -43,7 +46,7 @@ func Test_MethodData_structCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.structCode()
 			})
 
@@ -53,7 +56,8 @@ func Test_MethodData_structCode(t *testing.T) {
 }
 
 func Test_MethodData_methodNameFuncCode(t *testing.T) {
-	out := runMethodDataFunc(nil, nil, false, func(data MethodData) jen.Code {
+	tc := methodDataTestCase{}
+	out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.methodNameFuncCode("x")
 	})
 
@@ -63,7 +67,8 @@ func Test_MethodData_methodNameFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_interfaceNameFuncCode(t *testing.T) {
-	out := runMethodDataFunc(nil, nil, false, func(data MethodData) jen.Code {
+	tc := methodDataTestCase{}
+	out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.interfaceNameFuncCode("x")
 	})
 
@@ -73,7 +78,8 @@ func Test_MethodData_interfaceNameFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_fatalFuncCode(t *testing.T) {
-	out := runMethodDataFunc(nil, nil, false, func(data MethodData) jen.Code {
+	tc := methodDataTestCase{}
+	out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.fatalFuncCode("x")
 	})
 
@@ -86,7 +92,8 @@ func Test_MethodData_fatalFuncCode(t *testing.T) {
 
 	assert.Equal(t, expected, out)
 
-	out = runMethodDataFunc(nil, nil, true, func(data MethodData) jen.Code {
+	tc.omitExpect = true
+	out = runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.fatalFuncCode("x")
 	})
 
@@ -96,7 +103,8 @@ func Test_MethodData_fatalFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_panicFuncCode(t *testing.T) {
-	out := runMethodDataFunc(nil, nil, false, func(data MethodData) jen.Code {
+	tc := methodDataTestCase{}
+	out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.panicFuncCode("x")
 	})
 
@@ -108,7 +116,8 @@ func Test_MethodData_panicFuncCode(t *testing.T) {
 
 	assert.Equal(t, expected, out)
 
-	out = runMethodDataFunc(nil, nil, true, func(data MethodData) jen.Code {
+	tc.omitExpect = true
+	out = runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.panicFuncCode("x")
 	})
 
@@ -121,12 +130,7 @@ func Test_MethodData_panicFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_buildCallHistoryFuncCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:       "no arguments, omit expect",
 			omitExpect: true,
@@ -180,7 +184,7 @@ func (x *targetMethod) buildCallHistory(sb *strings.Builder, header string) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, nil, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.buildCallHistoryFuncCode("x")
 			})
 
@@ -190,12 +194,7 @@ func (x *targetMethod) buildCallHistory(sb *strings.Builder, header string) {
 }
 
 func Test_MethodData_invokeStubFuncCode(t *testing.T) {
-	cases := []struct {
-		name      string
-		arguments []VarInfo
-		returns   []VarInfo
-		expected  string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name: "no arguments, no returns",
 			expected: `func (x *targetMethod) invokeStub() {
@@ -233,6 +232,17 @@ func Test_MethodData_invokeStubFuncCode(t *testing.T) {
 			arguments: varInfos("Input: input string"),
 			expected: `func (x *targetMethod) invokeStub(input string) {
 	x.stub(input)
+	x.capture(targetMethodArgument{Input: input})
+}
+`,
+		},
+
+		{
+			name:      "with variadic arguments, no return",
+			variadic:  true,
+			arguments: varInfos("Input: input []string"),
+			expected: `func (x *targetMethod) invokeStub(input []string) {
+	x.stub(input...)
 	x.capture(targetMethodArgument{Input: input})
 }
 `,
@@ -280,7 +290,7 @@ func Test_MethodData_invokeStubFuncCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, true, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.invokeStubFuncCode("x")
 			})
 
@@ -290,13 +300,7 @@ func Test_MethodData_invokeStubFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_invokeExpectFuncCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		omitExpect bool
-		arguments  []VarInfo
-		returns    []VarInfo
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:       "omit expect",
 			omitExpect: true,
@@ -439,6 +443,36 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 		},
 
 		{
+			name:      "with variadic arguments, with 2 returns",
+			variadic:  true,
+			arguments: varInfos("Input: input []string"),
+			returns: []VarInfo{
+				{Name: "first", Field: "First", OriginalName: "first", Type: gentest.Type("string")},
+				{Name: "second", Field: "Error", OriginalName: "err", Type: gentest.Type("error")},
+			},
+			expected: `func (x *targetMethod) invokeExpect(input []string) (first string, err error) {
+	v0 := []any{"input", input}
+
+	v1 := len(x.Calls)
+	if v1 >= len(x.expects) {
+		x.panic(libMessageTooManyCalls(x, len(x.expects), v1+1, v0))
+	}
+
+	v2 := x.expects[v1]
+	if v2.match != nil && !v2.match(input...) {
+		v2.tb.Helper()
+		x.fatal(v1, libMessageMatchFail(x, v2.matchLocation, v1, v0))
+	}
+
+	v2.tb.Helper()
+	libMatchArgument(x, v1, "input", input, v2.matcher.input, v2.matcherWants, v2.matcherMethods, v2.matcherHints, v2.tb, v2.matcherLocations["input"])
+
+	return x.capture(targetMethodArgument{Input: input}, v2.returns)
+}
+`,
+		},
+
+		{
 			name:      "with name collision",
 			arguments: varInfos("Input: v0 string"),
 			returns: []VarInfo{
@@ -470,7 +504,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.invokeExpectFuncCode("x")
 			})
 
@@ -480,12 +514,7 @@ func (x *targetMethod) invokeExpect(ctx context.Context, id int) error {
 }
 
 func Test_MethodData_captureFuncCode(t *testing.T) {
-	cases := []struct {
-		name      string
-		arguments []VarInfo
-		returns   []VarInfo
-		expected  string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name: "no arguments, no returns",
 			expected: `func (x *targetMethod) capture() {
@@ -554,7 +583,7 @@ func Test_MethodData_captureFuncCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, true, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.captureFuncCode("x")
 			})
 
@@ -564,7 +593,8 @@ func Test_MethodData_captureFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_verifyFuncCode(t *testing.T) {
-	out := runMethodDataFunc(nil, nil, false, func(data MethodData) jen.Code {
+	tc := methodDataTestCase{}
+	out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.verifyFuncCode("x")
 	})
 
@@ -578,7 +608,8 @@ func Test_MethodData_verifyFuncCode(t *testing.T) {
 
 	assert.Equal(t, expected, out)
 
-	out = runMethodDataFunc(nil, nil, true, func(data MethodData) jen.Code {
+	tc.omitExpect = true
+	out = runMethodDataFunc(tc, func(data MethodData) jen.Code {
 		return data.verifyFuncCode("x")
 	})
 
@@ -588,13 +619,7 @@ func Test_MethodData_verifyFuncCode(t *testing.T) {
 }
 
 func Test_MethodData_callStructCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name: "no arguments, no returns",
 			expected: `type targetMethodCall struct {
@@ -641,7 +666,7 @@ func Test_MethodData_callStructCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.callStructCode()
 			})
 
@@ -651,13 +676,7 @@ func Test_MethodData_callStructCode(t *testing.T) {
 }
 
 func Test_MethodData_argumentStructCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:     "no arguments",
 			expected: ``,
@@ -691,7 +710,7 @@ type targetMethodArgument struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.argumentStructCode()
 			})
 
@@ -701,13 +720,7 @@ type targetMethodArgument struct {
 }
 
 func Test_MethodData_argumentMatcherStructCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:     "no arguments",
 			expected: ``,
@@ -735,7 +748,7 @@ type targetMethodArgumentMatcher struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.argumentMatcherStructCode()
 			})
 
@@ -745,13 +758,7 @@ type targetMethodArgumentMatcher struct {
 }
 
 func Test_MethodData_returnStructCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:     "no returns",
 			expected: ``,
@@ -781,7 +788,7 @@ func Test_MethodData_returnStructCode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.returnStructCode()
 			})
 
@@ -791,13 +798,7 @@ func Test_MethodData_returnStructCode(t *testing.T) {
 }
 
 func Test_MethodData_expectStructCode(t *testing.T) {
-	cases := []struct {
-		name       string
-		arguments  []VarInfo
-		returns    []VarInfo
-		omitExpect bool
-		expected   string
-	}{
+	cases := []methodDataTestCase{
 		{
 			name:       "omit expect",
 			omitExpect: true,
@@ -841,7 +842,7 @@ type targetMethodExpect struct {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := runMethodDataFunc(tc.arguments, tc.returns, tc.omitExpect, func(data MethodData) jen.Code {
+			out := runMethodDataFunc(tc, func(data MethodData) jen.Code {
 				return data.expectStructCode()
 			})
 
@@ -850,7 +851,7 @@ type targetMethodExpect struct {
 	}
 }
 
-func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, omitExpect bool, fn func(data MethodData) jen.Code) string {
+func runMethodDataFunc(tc methodDataTestCase, fn func(data MethodData) jen.Code) string {
 	data := MethodData{
 		Struct:                "targetMethod",
 		CallStruct:            "targetMethodCall",
@@ -861,9 +862,10 @@ func runMethodDataFunc(arguments []VarInfo, returns []VarInfo, omitExpect bool, 
 		Interface:             "Target",
 		Name:                  "Method",
 		Lib:                   libData(),
-		Arguments:             arguments,
-		Returns:               returns,
-		OmitExpect:            omitExpect,
+		Variadic:              tc.variadic,
+		Arguments:             tc.arguments,
+		Returns:               tc.returns,
+		OmitExpect:            tc.omitExpect,
 	}
 
 	code := fn(data)
